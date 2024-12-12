@@ -18,7 +18,7 @@ class JournalSerializer(serializers.ModelSerializer):
     class Meta:
         model = Journal
         fields = ["id", "title", "description", "owner", "created_at"]  # Correct fields
-        read_only_fields = ["owner", "created_at"]  # Make owner and created_at read-only
+        read_only_fields = ["owner"]  # Make owner and created_at read-only
 
         
     

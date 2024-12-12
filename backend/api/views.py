@@ -30,7 +30,7 @@ class CreateJournalView(generics.ListCreateAPIView):
             print(serializer.errors)
     
 class DeleteJournal(generics.DestroyAPIView):
-    queryset = Journal.objects.all()
+    
     serializer_class = JournalSerializer
     permission_classes = [IsAuthenticated]
 
