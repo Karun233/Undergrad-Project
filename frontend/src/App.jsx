@@ -5,6 +5,7 @@ import Register from './pages/Register'
 import Home from './pages/Home'
 import NotFound from './pages/NotFound'
 import ProtectedRoute from './components/ProtectedRoute'
+import JournalPage from './pages/JournalPage'
 
 
 function Logout() {
@@ -28,6 +29,14 @@ function App() {
       element={
         <ProtectedRoute>
           <Home />
+        </ProtectedRoute>
+      }
+      />
+      <Route 
+      path="/journal/:id"
+      element={
+        <ProtectedRoute>
+          <JournalPage />
         </ProtectedRoute>
       }
       />

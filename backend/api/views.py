@@ -5,6 +5,8 @@ from .serializers import UserSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .models import Journal
 from .serializers import JournalSerializer
+from rest_framework.views import APIView
+from rest_framework.response import Response
 
 
 # Create your views here.
@@ -37,3 +39,17 @@ class DeleteJournal(generics.DestroyAPIView):
     def get_queryset(self):
         user = self.request.user
         return Journal.objects.filter(owner=user)
+    
+
+class JournalDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, id):
+        try:
+            journal = Journal.objects.get(id=id, owner=request.user)
+            serializer = JournalSerializer(journal)
+            return Response(serializer.data)
+        except Journal.DoesNotExist:
+            return Response({"error": "Journal not found"}, status=404)
+
+

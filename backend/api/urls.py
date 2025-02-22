@@ -4,4 +4,6 @@ from . import views
 urlpatterns = [
     path("journal/", views.CreateJournalView.as_view(), name="journal-list"),
     path("journal/delete/<int:pk>/", views.DeleteJournal.as_view(), name="delete-journal"),
+    path("journal/<int:id>/", views.JournalDetailView.as_view(), name="journal-detail"),
+
 ]

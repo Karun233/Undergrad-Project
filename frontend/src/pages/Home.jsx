@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import api from "../api";
 import Journal from "../components/Journal";
+import "../styles/Home.css"
 
 function Home() {
   const [journals, setJournals] = useState([]);
@@ -63,7 +64,7 @@ function Home() {
           <Journal journal={journal} onDelete={deleteJournal} key={journal.id} />
         ))}
       </div>
-      <button onClick={handleOpenModal}>Create New Journal</button>
+      <button  className="create-btn" onClick={handleOpenModal}>Create New Journal</button>
 
       {isModalOpen && (
         <div className="modal">
@@ -90,6 +91,7 @@ function Home() {
                 onChange={(e) => setDescription(e.target.value)}
               ></textarea>
               <input type="submit" value="Submit"></input>
+              <button className="cancel-btn" onClick={handleCloseModal}>Cancel</button>
             </form>
           </div>
         </div>
