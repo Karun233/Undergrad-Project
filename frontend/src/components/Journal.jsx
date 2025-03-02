@@ -10,7 +10,7 @@ function Journal({ journal, onDelete }) {
   const navigate = useNavigate();
 
   const openJournal = () => {
-    navigate(`/journal/${journal.id}/`)
+    navigate(`/journal/${journal.id}/add-entry`)
 
 }
 
