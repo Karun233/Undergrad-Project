@@ -101,3 +101,52 @@ class CreateEntryView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class JournalEntryDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, journal_id, entry_id):
+        try:
+            entry = JournalEntry.objects.get(
+                id=entry_id,
+                journal_id=journal_id,
+                journal__owner=request.user
+            )
+            serializer = JournalEntrySerializer(entry)
+            return Response(serializer.data)
+        except JournalEntry.DoesNotExist:
+            return Response({"error": "Entry not found"}, status=status.HTTP_404_NOT_FOUND)
+
+class JournalEntryUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, journal_id, entry_id):
+        try:
+            entry = JournalEntry.objects.get(
+                id=entry_id,
+                journal_id=journal_id,
+                journal__owner=request.user
+            )
+        except JournalEntry.DoesNotExist:
+            return Response({"error": "Entry not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = JournalEntrySerializer(entry, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class JournalEntryDeleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, journal_id, entry_id):
+        try:
+            entry = JournalEntry.objects.get(
+                id=entry_id,
+                journal_id=journal_id,
+                journal__owner=request.user
+            )
+        except JournalEntry.DoesNotExist:
+            return Response({"error": "Entry not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        entry.delete()
+        return Response({"message": "Entry deleted successfully"}, status=status.HTTP_204_NO_CONTENT)

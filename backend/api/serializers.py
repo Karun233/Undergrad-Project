@@ -27,6 +27,7 @@ class JournalEntrySerializer(serializers.ModelSerializer):
         model = JournalEntry
         fields = [
             'id',
+            'journal',  # Include journal field
             'date',
             'instrument',
             'direction',
@@ -36,5 +37,9 @@ class JournalEntrySerializer(serializers.ModelSerializer):
             'additional_comments',
             'created_at',
         ]
-        read_only_fields = ['id', 'created_at']  
+        read_only_fields = ['id', 'created_at']
+        extra_kwargs = {
+            'journal': {'required': False},  # Make journal optional in serializer
+            'feeling_during': {'required': False, 'default': list}  # Make feeling_during optional
+        } 
     

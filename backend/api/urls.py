@@ -13,4 +13,12 @@ urlpatterns = [
     # Add this new path for creating journal entries
     path("journal/<int:journal_id>/entries/create/", views.JournalEntryCreateView.as_view(), name="journal-entry-create"),
 
+
+
+    path("journal/<int:journal_id>/entries/<int:entry_id>/", views.JournalEntryDetailView.as_view(), name="journal-entry-detail"),
+    path("journal/<int:journal_id>/entries/<int:entry_id>/update/", views.JournalEntryUpdateView.as_view(), name="journal-entry-update"),
+    path("journal/<int:journal_id>/entries/<int:entry_id>/delete/", views.JournalEntryDeleteView.as_view(), name="journal-entry-delete"),
+
+    
+
 ]

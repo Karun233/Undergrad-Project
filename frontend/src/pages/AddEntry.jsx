@@ -185,6 +185,11 @@ function AddEntry() {
   console.log('Journal ID:', id);
   const [entries, setEntries] = useState([]); // State for journal entries
   const [showModal, setShowModal] = useState(false); // State for modal visibility
+  const [editMode, setEditMode] = useState(false); // State to track if we're editing or creating
+  const [currentEntryId, setCurrentEntryId] = useState(null); // Track the entry being edited
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false); // State for delete confirmation modal
+  const [entryToDelete, setEntryToDelete] = useState(null); // Track the entry to delete
+  
   const [formData, setFormData] = useState({
     date: '',
     instrument: '',
@@ -253,7 +258,62 @@ function AddEntry() {
     }));
   };
 
-  // Handle form submission
+  // Initialize edit mode with the current entry data
+  const handleEdit = (entry) => {
+    setFormData({
+      date: entry.date,
+      instrument: entry.instrument,
+      direction: entry.direction,
+      outcome: entry.outcome,
+      risk_management: entry.risk_management,
+      feeling_during: entry.feeling_during || [],
+      additional_comments: entry.additional_comments || '',
+    });
+    setCurrentEntryId(entry.id);
+    setEditMode(true);
+    setShowModal(true);
+  };
+
+  // Handle delete confirmation
+  const handleDeleteClick = (entry) => {
+    setEntryToDelete(entry);
+    setShowDeleteConfirm(true);
+  };
+
+  // Execute delete after confirmation
+  const confirmDelete = async () => {
+    if (!entryToDelete) return;
+    
+    try {
+      await axios.delete(`${API_BASE_URL}/journal/${id}/entries/${entryToDelete.id}/delete/`);
+      // Remove the deleted entry from the local state
+      setEntries(entries.filter(entry => entry.id !== entryToDelete.id));
+      setShowDeleteConfirm(false);
+      setEntryToDelete(null);
+      alert('Entry deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting entry:', error);
+      alert(`Error: ${error.response?.data?.detail || 'Failed to delete entry'}`);
+    }
+  };
+
+  // Reset form and modal state
+  const resetForm = () => {
+    setFormData({
+      date: '',
+      instrument: '',
+      direction: 'Buy',
+      outcome: 'Win',
+      risk_management: '',
+      feeling_during: [],
+      additional_comments: '',
+    });
+    setEditMode(false);
+    setCurrentEntryId(null);
+    setShowModal(false);
+  };
+
+  // Handle form submission (for both create and update)
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -261,37 +321,53 @@ function AddEntry() {
         ...formData
       };
       
-      // The interceptor will handle the token refresh if needed
-      await axios.post(
-        `${API_BASE_URL}/journal/${id}/entries/create/`,
-        entryData,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      if (editMode && currentEntryId) {
+        // Update existing entry
+        await axios.put(
+          `${API_BASE_URL}/journal/${id}/entries/${currentEntryId}/update/`,
+          entryData,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        alert('Entry updated successfully!');
+      } else {
+        // Create new entry
+        await axios.post(
+          `${API_BASE_URL}/journal/${id}/entries/create/`,
+          entryData,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        alert('Entry added successfully!');
+      }
       
-      alert('Entry added successfully!');
-      setFormData({
-        date: '',
-        instrument: '',
-        direction: 'Buy',
-        outcome: 'Win',
-        risk_management: '',
-        feeling_during: [],
-        additional_comments: '',
-      });
-      setShowModal(false);
+      resetForm();
 
       // Refresh the entries list after submission
       const response = await axios.get(`${API_BASE_URL}/journal/${id}/entries/`);
       setEntries(response.data);
     } catch (error) {
-      console.error('Error adding entry:', error);
+      console.error('Error with entry:', error);
       console.error('Error response:', error.response);
-      alert(`Error: ${error.response?.data?.detail || 'Failed to add entry'}`);
+      alert(`Error: ${error.response?.data?.detail || 'Failed to process entry'}`);
     }
+  };
+
+  // Close the modal and reset form
+  const handleCloseModal = () => {
+    resetForm();
+  };
+
+  // Initialize new entry creation
+  const handleAddNew = () => {
+    resetForm();
+    setShowModal(true);
   };
 
   // Ensure entries is an array before rendering
@@ -303,17 +379,17 @@ function AddEntry() {
   return (
     <div className="container mt-4">
       <Navbar />
-      <h2>Add entries to your Journal {id}</h2>
+      <h2>Journal Entries for Journal {id}</h2>
 
-      {/* Button to open the modal */}
+      {/* Button to open the modal for adding a new entry */}
       <button
         className="btn btn-primary mb-4"
-        onClick={() => setShowModal(true)}
+        onClick={handleAddNew}
       >
         Add New Entry
       </button>
 
-      {/* Bootstrap Modal for Add Entry Form */}
+      {/* Modal for Add/Edit Entry Form */}
       {showModal && (
         <div
           className="modal"
@@ -331,11 +407,11 @@ function AddEntry() {
           <div className="modal-dialog">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">Add New Entry</h5>
+                <h5 className="modal-title">{editMode ? 'Edit Entry' : 'Add New Entry'}</h5>
                 <button
                   type="button"
                   className="btn-close"
-                  onClick={() => setShowModal(false)}
+                  onClick={handleCloseModal}
                 ></button>
               </div>
               <div className="modal-body">
@@ -432,8 +508,52 @@ function AddEntry() {
                     />
                   </div>
                   
-                  <button type="submit" className="btn btn-primary">Add Entry</button>
+                  <button type="submit" className="btn btn-primary">{editMode ? 'Update Entry' : 'Add Entry'}</button>
+                  <button type="button" className="btn btn-secondary ms-2" onClick={handleCloseModal}>Cancel</button>
                 </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div
+          className="modal"
+          style={{
+            display: 'block',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            zIndex: 1050,
+          }}
+        >
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Confirm Delete</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setShowDeleteConfirm(false)}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <p>Are you sure you want to delete this entry? This action cannot be undone.</p>
+                <p><strong>Date:</strong> {entryToDelete?.date}</p>
+                <p><strong>Instrument:</strong> {entryToDelete?.instrument}</p>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowDeleteConfirm(false)}>
+                  Cancel
+                </button>
+                <button type="button" className="btn btn-danger" onClick={confirmDelete}>
+                  Delete
+                </button>
               </div>
             </div>
           </div>
@@ -451,34 +571,57 @@ function AddEntry() {
             <th>Risk Management</th>
             <th>Feeling During</th>
             <th>Additional Comments</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {entries.map((entry) => (
-            <tr key={entry.id}>
-              <td>{entry.date}</td>
-              <td>{entry.instrument}</td>
-              <td>{entry.direction}</td>
-              <td>{entry.outcome}</td>
-              <td>{entry.risk_management}</td>
-              <td>
-                {entry.feeling_during.map((feeling, idx) => (
-                  <span 
-                    key={idx} 
-                    className="badge bg-primary me-1"
-                    style={{ 
-                      borderRadius: '12px', 
-                      padding: '5px 10px',
-                      margin: '2px'
-                    }}
-                  >
-                    {feeling}
-                  </span>
-                ))}
-              </td>
-              <td>{entry.additional_comments}</td>
+          {entries.length === 0 ? (
+            <tr>
+              <td colSpan="8" className="text-center">No entries found. Add your first entry!</td>
             </tr>
-          ))}
+          ) : (
+            entries.map((entry) => (
+              <tr key={entry.id}>
+                <td>{entry.date}</td>
+                <td>{entry.instrument}</td>
+                <td>{entry.direction}</td>
+                <td>{entry.outcome}</td>
+                <td>{entry.risk_management}</td>
+                <td>
+                  {entry.feeling_during && entry.feeling_during.map((feeling, idx) => (
+                    <span 
+                      key={idx} 
+                      className="badge bg-primary me-1"
+                      style={{ 
+                        borderRadius: '12px', 
+                        padding: '5px 10px',
+                        margin: '2px'
+                      }}
+                    >
+                      {feeling}
+                    </span>
+                  ))}
+                </td>
+                <td>{entry.additional_comments}</td>
+                <td>
+                  <div className="btn-group" role="group">
+                    <button
+                      className="btn btn-sm btn-outline-primary"
+                      onClick={() => handleEdit(entry)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="btn btn-sm btn-outline-danger ms-1"
+                      onClick={() => handleDeleteClick(entry)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>
