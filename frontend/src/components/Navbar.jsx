@@ -1,7 +1,15 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
-function Navbar({ journalId }) {
+function Navbar() {
+  // Get the journal ID from URL parameters
+  const params = useParams();
+  // Extract the id from params, which might be called "id" or "journalId" depending on your route setup
+  const journalId = params.id || params.journalId;
+  
+  // Log the current journal ID for debugging
+  console.log('Navbar using journal ID:', journalId);
+
   return (
     <nav className="navbar">
       <ul className="navbar-list">

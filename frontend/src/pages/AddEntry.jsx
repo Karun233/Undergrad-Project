@@ -4,6 +4,7 @@ import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
 // Import your token constants
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
+import Navbar from '../components/Navbar';
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
@@ -136,6 +137,49 @@ axios.interceptors.response.use(
   }
 );
 
+// Multi-select component for emotions
+const EmotionMultiSelect = ({ selectedEmotions, onChange }) => {
+  const emotions = [
+    'Not worried',
+    'Not really bothered',
+    'Neutral',
+    'A little worried',
+    'Very uneasy'
+  ];
+
+  const toggleEmotion = (emotion) => {
+    if (selectedEmotions.includes(emotion)) {
+      onChange(selectedEmotions.filter(e => e !== emotion));
+    } else {
+      onChange([...selectedEmotions, emotion]);
+    }
+  };
+
+  return (
+    <div className="emotion-multiselect">
+      {emotions.map(emotion => (
+        <div 
+          key={emotion} 
+          className={`emotion-tag ${selectedEmotions.includes(emotion) ? 'selected' : ''}`}
+          style={{
+            display: 'inline-block',
+            margin: '4px',
+            padding: '6px 12px',
+            borderRadius: '15px',
+            backgroundColor: selectedEmotions.includes(emotion) ? '#007bff' : '#e9ecef',
+            color: selectedEmotions.includes(emotion) ? 'white' : 'black',
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+          onClick={() => toggleEmotion(emotion)}
+        >
+          {emotion}
+        </div>
+      ))}
+    </div>
+  );
+};
+
 function AddEntry() {
   const { id } = useParams(); // Get the journal ID from the URL
   console.log('Journal ID:', id);
@@ -144,8 +188,8 @@ function AddEntry() {
   const [formData, setFormData] = useState({
     date: '',
     instrument: '',
-    direction: '',
-    outcome: '',
+    direction: 'Buy', // Default value
+    outcome: 'Win',   // Default value
     risk_management: '',
     feeling_during: [],
     additional_comments: '',
@@ -195,9 +239,17 @@ function AddEntry() {
   // Handle form field changes
   const handleChange = (e) => {
     const { id, value } = e.target;
-    setFormData((prevData) => ({
+    setFormData(prevData => ({
       ...prevData,
-      [id]: id === 'feeling_during' ? value.split(',') : value,
+      [id]: value
+    }));
+  };
+
+  // Handle emotion selection changes
+  const handleEmotionChange = (selectedEmotions) => {
+    setFormData(prevData => ({
+      ...prevData,
+      feeling_during: selectedEmotions
     }));
   };
 
@@ -206,8 +258,7 @@ function AddEntry() {
     e.preventDefault();
     try {
       const entryData = {
-        ...formData,
-        feeling_during: formData.feeling_during,
+        ...formData
       };
       
       // The interceptor will handle the token refresh if needed
@@ -225,8 +276,8 @@ function AddEntry() {
       setFormData({
         date: '',
         instrument: '',
-        direction: '',
-        outcome: '',
+        direction: 'Buy',
+        outcome: 'Win',
         risk_management: '',
         feeling_during: [],
         additional_comments: '',
@@ -251,6 +302,7 @@ function AddEntry() {
 
   return (
     <div className="container mt-4">
+      <Navbar />
       <h2>Add entries to your Journal {id}</h2>
 
       {/* Button to open the modal */}
@@ -300,6 +352,7 @@ function AddEntry() {
                       required
                     />
                   </div>
+                  
                   {/* Instrument Input */}
                   <div className="mb-3">
                     <label htmlFor="instrument" className="form-label">Instrument</label>
@@ -313,32 +366,38 @@ function AddEntry() {
                       required
                     />
                   </div>
-                  {/* Direction Input */}
+                  
+                  {/* Direction Dropdown */}
                   <div className="mb-3">
                     <label htmlFor="direction" className="form-label">Direction</label>
-                    <input
-                      type="text"
-                      className="form-control"
+                    <select
+                      className="form-select"
                       id="direction"
-                      placeholder="Direction"
                       value={formData.direction}
                       onChange={handleChange}
                       required
-                    />
+                    >
+                      <option value="Buy">Buy</option>
+                      <option value="Sell">Sell</option>
+                    </select>
                   </div>
-                  {/* Outcome Input */}
+                  
+                  {/* Outcome Dropdown */}
                   <div className="mb-3">
                     <label htmlFor="outcome" className="form-label">Outcome</label>
-                    <input
-                      type="text"
-                      className="form-control"
+                    <select
+                      className="form-select"
                       id="outcome"
-                      placeholder="Outcome"
                       value={formData.outcome}
                       onChange={handleChange}
                       required
-                    />
+                    >
+                      <option value="Win">Win</option>
+                      <option value="Loss">Loss</option>
+                      <option value="Breakeven">Breakeven</option>
+                    </select>
                   </div>
+                  
                   {/* Risk Management Input */}
                   <div className="mb-3">
                     <label htmlFor="risk_management" className="form-label">Risk Management</label>
@@ -351,24 +410,16 @@ function AddEntry() {
                       required
                     />
                   </div>
-                  {/* Feeling During Input */}
+                  
+                  {/* Feeling During Multi-Select */}
                   <div className="mb-3">
-                    <label htmlFor="feeling_during" className="form-label">Feeling During</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      id="feeling_during"
-                      placeholder="Feeling During"
-                      value={formData.feeling_during.join(', ')}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          feeling_during: e.target.value.split(',').map((s) => s.trim()),
-                        })
-                      }
-                      required
+                    <label className="form-label">Feeling During Trade</label>
+                    <EmotionMultiSelect 
+                      selectedEmotions={formData.feeling_during}
+                      onChange={handleEmotionChange}
                     />
                   </div>
+                  
                   {/* Additional Comments Input */}
                   <div className="mb-3">
                     <label htmlFor="additional_comments" className="form-label">Additional Comments</label>
@@ -380,6 +431,7 @@ function AddEntry() {
                       onChange={handleChange}
                     />
                   </div>
+                  
                   <button type="submit" className="btn btn-primary">Add Entry</button>
                 </form>
               </div>
@@ -409,7 +461,21 @@ function AddEntry() {
               <td>{entry.direction}</td>
               <td>{entry.outcome}</td>
               <td>{entry.risk_management}</td>
-              <td>{entry.feeling_during.join(', ')}</td>
+              <td>
+                {entry.feeling_during.map((feeling, idx) => (
+                  <span 
+                    key={idx} 
+                    className="badge bg-primary me-1"
+                    style={{ 
+                      borderRadius: '12px', 
+                      padding: '5px 10px',
+                      margin: '2px'
+                    }}
+                  >
+                    {feeling}
+                  </span>
+                ))}
+              </td>
               <td>{entry.additional_comments}</td>
             </tr>
           ))}
