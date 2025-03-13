@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -83,13 +83,6 @@ axios.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    console.log('Axios Request:', {
-      url: config.url,
-      method: config.method,
-      headers: config.headers,
-      data: config.data
-    });
-    
     return config;
   },
   error => {
@@ -100,11 +93,6 @@ axios.interceptors.request.use(
 
 axios.interceptors.response.use(
   response => {
-    console.log('Axios Response:', {
-      status: response.status,
-      headers: response.headers,
-      data: response.data
-    });
     return response;
   },
   async error => {
@@ -137,6 +125,56 @@ axios.interceptors.response.use(
   }
 );
 
+// Image Modal Component
+const ImageModal = ({ imageUrl, isOpen, onClose }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="image-modal"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1100,
+      }}
+      onClick={onClose}
+    >
+      <div 
+        className="modal-close"
+        style={{
+          position: 'absolute',
+          top: '20px',
+          right: '20px',
+          color: 'white',
+          fontSize: '30px',
+          cursor: 'pointer',
+          fontWeight: 'bold',
+        }}
+      >
+        &times;
+      </div>
+      <img
+        src={imageUrl}
+        alt="Trade detail"
+        style={{
+          maxWidth: '90%',
+          maxHeight: '90%',
+          objectFit: 'contain',
+          boxShadow: '0 5px 15px rgba(0,0,0,0.5)',
+        }}
+        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking on the image
+      />
+    </div>
+  );
+};
+
 // Multi-select component for emotions
 const EmotionMultiSelect = ({ selectedEmotions, onChange }) => {
   const emotions = [
@@ -147,11 +185,29 @@ const EmotionMultiSelect = ({ selectedEmotions, onChange }) => {
     'Very uneasy'
   ];
 
+  // Ensure selectedEmotions is always an array of strings
+  const normalizedEmotions = React.useMemo(() => {
+    if (!selectedEmotions) return [];
+    if (typeof selectedEmotions === 'string') {
+      try {
+        // Try to parse it as JSON
+        const parsed = JSON.parse(selectedEmotions);
+        return Array.isArray(parsed) ? parsed.map(String) : [String(selectedEmotions)];
+      } catch {
+        // If not valid JSON, treat as a single string
+        return [selectedEmotions];
+      }
+    }
+    return Array.isArray(selectedEmotions) 
+      ? selectedEmotions.map(String) 
+      : [String(selectedEmotions)];
+  }, [selectedEmotions]);
+
   const toggleEmotion = (emotion) => {
-    if (selectedEmotions.includes(emotion)) {
-      onChange(selectedEmotions.filter(e => e !== emotion));
+    if (normalizedEmotions.includes(emotion)) {
+      onChange(normalizedEmotions.filter(e => e !== emotion));
     } else {
-      onChange([...selectedEmotions, emotion]);
+      onChange([...normalizedEmotions, emotion]);
     }
   };
 
@@ -160,14 +216,14 @@ const EmotionMultiSelect = ({ selectedEmotions, onChange }) => {
       {emotions.map(emotion => (
         <div 
           key={emotion} 
-          className={`emotion-tag ${selectedEmotions.includes(emotion) ? 'selected' : ''}`}
+          className={`emotion-tag ${normalizedEmotions.includes(emotion) ? 'selected' : ''}`}
           style={{
             display: 'inline-block',
             margin: '4px',
             padding: '6px 12px',
             borderRadius: '15px',
-            backgroundColor: selectedEmotions.includes(emotion) ? '#007bff' : '#e9ecef',
-            color: selectedEmotions.includes(emotion) ? 'white' : 'black',
+            backgroundColor: normalizedEmotions.includes(emotion) ? '#007bff' : '#e9ecef',
+            color: normalizedEmotions.includes(emotion) ? 'white' : 'black',
             cursor: 'pointer',
             transition: 'all 0.2s'
           }}
@@ -176,6 +232,92 @@ const EmotionMultiSelect = ({ selectedEmotions, onChange }) => {
           {emotion}
         </div>
       ))}
+    </div>
+  );
+};
+
+// Updated ImageUploader component
+const ImageUploader = ({ images, onImagesChange }) => {
+  const fileInputRef = useRef(null);
+  
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files);
+    // Validate files - only allow image files
+    const validImageFiles = files.filter(file => 
+      file.type.startsWith('image/')
+    );
+    
+    if (validImageFiles.length !== files.length) {
+      alert('Some files were not images and were skipped.');
+    }
+    
+    onImagesChange([...images, ...validImageFiles]);
+  };
+  
+  const openFileDialog = () => {
+    fileInputRef.current.click();
+  };
+  
+  const handleRemoveImage = (index) => {
+    const newImages = [...images];
+    newImages.splice(index, 1);
+    onImagesChange(newImages);
+  };
+  
+  return (
+    <div className="image-uploader mb-3">
+      <div className="d-flex flex-wrap mb-2">
+        {images.map((image, index) => (
+          <div 
+            key={index}
+            className="image-preview-container m-1"
+            style={{ position: 'relative' }}
+          >
+            <img 
+              src={typeof image === 'string' ? image : URL.createObjectURL(image)} 
+              alt={`Preview ${index}`}
+              className="image-preview"
+              style={{ 
+                width: '100px', 
+                height: '100px', 
+                objectFit: 'cover',
+                borderRadius: '4px'
+              }}
+            />
+            <button
+              type="button"
+              className="btn btn-sm btn-danger"
+              style={{
+                position: 'absolute',
+                top: '5px',
+                right: '5px',
+                padding: '2px 6px',
+                fontSize: '12px'
+              }}
+              onClick={() => handleRemoveImage(index)}
+            >
+              ×
+            </button>
+          </div>
+        ))}
+      </div>
+      
+      <button 
+        type="button" 
+        className="btn btn-outline-secondary"
+        onClick={openFileDialog}
+      >
+        Add Images
+      </button>
+      
+      <input 
+        type="file"
+        ref={fileInputRef}
+        style={{ display: 'none' }}
+        accept="image/*"
+        multiple
+        onChange={handleFileSelect}
+      />
     </div>
   );
 };
@@ -189,16 +331,36 @@ function AddEntry() {
   const [currentEntryId, setCurrentEntryId] = useState(null); // Track the entry being edited
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false); // State for delete confirmation modal
   const [entryToDelete, setEntryToDelete] = useState(null); // Track the entry to delete
+  const [selectedImages, setSelectedImages] = useState([]); // State for selected images
+  const [isSubmitting, setIsSubmitting] = useState(false); // Track form submission state
+  const [showImageModal, setShowImageModal] = useState(false); // State for image modal visibility
+  const [selectedImageUrl, setSelectedImageUrl] = useState(null); // Track the selected image URL
   
   const [formData, setFormData] = useState({
     date: '',
     instrument: '',
-    direction: 'Buy', // Default value
-    outcome: 'Win',   // Default value
+    direction: 'Buy',
+    outcome: 'Win',
     risk_management: '',
     feeling_during: [],
     additional_comments: '',
+    risk_reward_ratio: '',  // New field
+    profit_loss: '',        // New field
   });
+
+  // Function to handle image click for modal display
+  const handleImageClick = (imageUrl, e) => {
+    e.preventDefault(); // Prevent the default behavior of opening a new tab
+    e.stopPropagation(); // Prevent event bubbling
+    setSelectedImageUrl(imageUrl);
+    setShowImageModal(true);
+  };
+
+  // Function to close the image modal
+  const handleCloseImageModal = () => {
+    setShowImageModal(false);
+    setSelectedImageUrl(null);
+  };
 
   // Debug token validity on component mount
   useEffect(() => {
@@ -250,12 +412,36 @@ function AddEntry() {
     }));
   };
 
+  // Handle number field changes with validation
+  const handleNumberChange = (e) => {
+    const { id, value } = e.target;
+    // Allow empty string, numbers with up to 2 decimal places, and negative numbers
+    if (value === '' || /^-?\d*\.?\d{0,2}$/.test(value)) {
+      setFormData(prevData => ({
+        ...prevData,
+        [id]: value
+      }));
+    }
+  };
+
   // Handle emotion selection changes
   const handleEmotionChange = (selectedEmotions) => {
+    // Ensure we're always working with an array of strings
+    const emotions = Array.isArray(selectedEmotions) 
+      ? selectedEmotions.map(emotion => String(emotion)) 
+      : [String(selectedEmotions)];
+    
+    console.log('Setting emotions:', emotions);
+    
     setFormData(prevData => ({
       ...prevData,
-      feeling_during: selectedEmotions
+      feeling_during: emotions
     }));
+  };
+
+  // Handle image selection changes
+  const handleImagesChange = (newImages) => {
+    setSelectedImages(newImages);
   };
 
   // Initialize edit mode with the current entry data
@@ -268,7 +454,12 @@ function AddEntry() {
       risk_management: entry.risk_management,
       feeling_during: entry.feeling_during || [],
       additional_comments: entry.additional_comments || '',
+      risk_reward_ratio: entry.risk_reward_ratio || '',
+      profit_loss: entry.profit_loss || '',
     });
+    
+    // Set selected images to the existing images from the entry
+    setSelectedImages(entry.images || []);
     setCurrentEntryId(entry.id);
     setEditMode(true);
     setShowModal(true);
@@ -307,55 +498,124 @@ function AddEntry() {
       risk_management: '',
       feeling_during: [],
       additional_comments: '',
+      risk_reward_ratio: '',
+      profit_loss: '',
     });
+    setSelectedImages([]);
     setEditMode(false);
     setCurrentEntryId(null);
     setShowModal(false);
+    setIsSubmitting(false);
   };
 
-  // Handle form submission (for both create and update)
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return; // Prevent double submission
+    
+    setIsSubmitting(true);
+    
     try {
-      const entryData = {
-        ...formData
-      };
+      // Create FormData object to handle file uploads
+      const formDataToSend = new FormData();
+      
+      // Append text data
+      Object.keys(formData).forEach(key => {
+        if (key === 'feeling_during') {
+          // Handle array data by converting to JSON string
+          formDataToSend.append(key, JSON.stringify(formData[key]));
+        } else if (formData[key] !== null && formData[key] !== undefined) {
+          formDataToSend.append(key, formData[key]);
+        }
+      });
+      
+      // Append image files if there are any new image files (not URLs)
+      const newImageFiles = selectedImages.filter(image => typeof image !== 'string');
+      console.log(`Adding ${newImageFiles.length} new image files`);
+      
+      newImageFiles.forEach((image, index) => {
+        if (image && image instanceof File && image.type.startsWith('image/')) {
+          formDataToSend.append('images', image);
+          console.log(`Appended image ${index}: ${image.name}, type: ${image.type}, size: ${image.size} bytes`);
+        } else {
+          console.warn(`Skipped invalid image at index ${index}:`, image);
+        }
+      });
+      
+      // Append existing image URLs
+      const existingImageUrls = selectedImages.filter(image => typeof image === 'string');
+      console.log(`Adding ${existingImageUrls.length} existing image URLs`);
+      if (existingImageUrls.length > 0) {
+        formDataToSend.append('existing_images', JSON.stringify(existingImageUrls));
+      }
+      
+      // Debug output FormData contents
+      console.log('FormData contents:');
+      for (let pair of formDataToSend.entries()) {
+        console.log(`${pair[0]}: ${typeof pair[1] === 'object' ? 'File object' : pair[1]}`);
+      }
+      
+      let response;
       
       if (editMode && currentEntryId) {
         // Update existing entry
-        await axios.put(
+        console.log(`Updating entry ${currentEntryId} for journal ${id}`);
+        response = await axios.put(
           `${API_BASE_URL}/journal/${id}/entries/${currentEntryId}/update/`,
-          entryData,
+          formDataToSend,
           {
             headers: {
-              'Content-Type': 'application/json',
+              'Content-Type': 'multipart/form-data',
             },
           }
         );
+        console.log('Update response:', response.data);
         alert('Entry updated successfully!');
       } else {
         // Create new entry
-        await axios.post(
+        console.log(`Creating new entry for journal ${id}`);
+        response = await axios.post(
           `${API_BASE_URL}/journal/${id}/entries/create/`,
-          entryData,
+          formDataToSend,
           {
             headers: {
-              'Content-Type': 'application/json',
+              'Content-Type': 'multipart/form-data',
             },
           }
         );
+        console.log('Create response:', response.data);
         alert('Entry added successfully!');
       }
       
       resetForm();
 
       // Refresh the entries list after submission
-      const response = await axios.get(`${API_BASE_URL}/journal/${id}/entries/`);
-      setEntries(response.data);
+      const entriesResponse = await axios.get(`${API_BASE_URL}/journal/${id}/entries/`);
+      setEntries(entriesResponse.data);
     } catch (error) {
       console.error('Error with entry:', error);
-      console.error('Error response:', error.response);
-      alert(`Error: ${error.response?.data?.detail || 'Failed to process entry'}`);
+      
+      if (error.response) {
+        console.error('Error status:', error.response.status);
+        console.error('Error data:', error.response.data);
+        // More detailed error information
+        if (error.response.data) {
+          const errorDetails = Object.entries(error.response.data)
+            .map(([key, value]) => `${key}: ${value}`)
+            .join(', ');
+          alert(`Error: ${errorDetails}`);
+        } else {
+          alert(`Error ${error.response.status}: ${error.response.statusText || 'Unknown error'}`);
+        }
+      } else if (error.request) {
+        console.error('No response received:', error.request);
+        alert('Error: No response received from server. Please check your connection.');
+      } else {
+        console.error('Error message:', error.message);
+        alert(`Error: ${error.message}`);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -368,6 +628,16 @@ function AddEntry() {
   const handleAddNew = () => {
     resetForm();
     setShowModal(true);
+  };
+
+  // Format number for display in the table
+  const formatNumber = (value) => {
+    if (!value && value !== 0) return '';
+    
+    // Ensure 2 decimal places and add + sign for positive numbers
+    const num = parseFloat(value);
+    const sign = num > 0 ? '+' : '';
+    return `${sign}${num.toFixed(2)}`;
   };
 
   // Ensure entries is an array before rendering
@@ -402,9 +672,10 @@ function AddEntry() {
             width: '100%',
             height: '100%',
             zIndex: 1050,
+            overflowY: 'auto', // Allow scrolling for long forms
           }}
         >
-          <div className="modal-dialog">
+          <div className="modal-dialog modal-lg">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">{editMode ? 'Edit Entry' : 'Add New Entry'}</h5>
@@ -416,62 +687,111 @@ function AddEntry() {
               </div>
               <div className="modal-body">
                 <form onSubmit={handleSubmit}>
-                  {/* Date Input */}
-                  <div className="mb-3">
-                    <label htmlFor="date" className="form-label">Date</label>
-                    <input
-                      type="date"
-                      className="form-control"
-                      id="date"
-                      value={formData.date}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                  
-                  {/* Instrument Input */}
-                  <div className="mb-3">
-                    <label htmlFor="instrument" className="form-label">Instrument</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      id="instrument"
-                      placeholder="Instrument"
-                      value={formData.instrument}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                  
-                  {/* Direction Dropdown */}
-                  <div className="mb-3">
-                    <label htmlFor="direction" className="form-label">Direction</label>
-                    <select
-                      className="form-select"
-                      id="direction"
-                      value={formData.direction}
-                      onChange={handleChange}
-                      required
-                    >
-                      <option value="Buy">Buy</option>
-                      <option value="Sell">Sell</option>
-                    </select>
-                  </div>
-                  
-                  {/* Outcome Dropdown */}
-                  <div className="mb-3">
-                    <label htmlFor="outcome" className="form-label">Outcome</label>
-                    <select
-                      className="form-select"
-                      id="outcome"
-                      value={formData.outcome}
-                      onChange={handleChange}
-                      required
-                    >
-                      <option value="Win">Win</option>
-                      <option value="Loss">Loss</option>
-                      <option value="Breakeven">Breakeven</option>
-                    </select>
+                  <div className="row">
+                    {/* First column */}
+                    <div className="col-md-6">
+                      {/* Date Input */}
+                      <div className="mb-3">
+                        <label htmlFor="date" className="form-label">Date</label>
+                        <input
+                          type="date"
+                          className="form-control"
+                          id="date"
+                          value={formData.date}
+                          onChange={handleChange}
+                          required
+                        />
+                      </div>
+                      
+                      {/* Instrument Input */}
+                      <div className="mb-3">
+                        <label htmlFor="instrument" className="form-label">Instrument</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          id="instrument"
+                          placeholder="Instrument"
+                          value={formData.instrument}
+                          onChange={handleChange}
+                          required
+                        />
+                      </div>
+                      
+                      {/* Direction Dropdown */}
+                      <div className="mb-3">
+                        <label htmlFor="direction" className="form-label">Direction</label>
+                        <select
+                          className="form-select"
+                          id="direction"
+                          value={formData.direction}
+                          onChange={handleChange}
+                          required
+                        >
+                          <option value="Buy">Buy</option>
+                          <option value="Sell">Sell</option>
+                        </select>
+                      </div>
+                      
+                      {/* Outcome Dropdown */}
+                      <div className="mb-3">
+                        <label htmlFor="outcome" className="form-label">Outcome</label>
+                        <select
+                          className="form-select"
+                          id="outcome"
+                          value={formData.outcome}
+                          onChange={handleChange}
+                          required
+                        >
+                          <option value="Win">Win</option>
+                          <option value="Loss">Loss</option>
+                          <option value="Breakeven">Breakeven</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    {/* Second column */}
+                    <div className="col-md-6">
+                      {/* Risk-to-Reward Ratio Input */}
+                      <div className="mb-3">
+                        <label htmlFor="risk_reward_ratio" className="form-label">
+                          Risk-to-Reward Ratio
+                          <small className="text-muted ms-2">(e.g., 1.5 for 1:1.5)</small>
+                        </label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          id="risk_reward_ratio"
+                          placeholder="Risk-to-Reward Ratio"
+                          value={formData.risk_reward_ratio}
+                          onChange={handleNumberChange}
+                        />
+                      </div>
+                      
+                      {/* Profit/Loss Input */}
+                      <div className="mb-3">
+                        <label htmlFor="profit_loss" className="form-label">
+                          Profit/Loss
+                          <small className="text-muted ms-2">(+ for profit, - for loss)</small>
+                        </label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          id="profit_loss"
+                          placeholder="Profit/Loss Amount"
+                          value={formData.profit_loss}
+                          onChange={handleNumberChange}
+                        />
+                      </div>
+                      
+                      {/* Feeling During Multi-Select */}
+                      <div className="mb-3">
+                        <label className="form-label">Feeling During Trade</label>
+                        <EmotionMultiSelect 
+                          selectedEmotions={formData.feeling_during}
+                          onChange={handleEmotionChange}
+                        />
+                      </div>
+                    </div>
                   </div>
                   
                   {/* Risk Management Input */}
@@ -487,15 +807,6 @@ function AddEntry() {
                     />
                   </div>
                   
-                  {/* Feeling During Multi-Select */}
-                  <div className="mb-3">
-                    <label className="form-label">Feeling During Trade</label>
-                    <EmotionMultiSelect 
-                      selectedEmotions={formData.feeling_during}
-                      onChange={handleEmotionChange}
-                    />
-                  </div>
-                  
                   {/* Additional Comments Input */}
                   <div className="mb-3">
                     <label htmlFor="additional_comments" className="form-label">Additional Comments</label>
@@ -508,8 +819,38 @@ function AddEntry() {
                     />
                   </div>
                   
-                  <button type="submit" className="btn btn-primary">{editMode ? 'Update Entry' : 'Add Entry'}</button>
-                  <button type="button" className="btn btn-secondary ms-2" onClick={handleCloseModal}>Cancel</button>
+                  {/* Image Upload Section */}
+                  <div className="mb-3">
+                    <label className="form-label">Trade Images</label>
+                    <ImageUploader 
+                      images={selectedImages}
+                      onImagesChange={handleImagesChange}
+                    />
+                  </div>
+                  
+                  <div className="d-flex justify-content-end">
+                    <button 
+                      type="button" 
+                      className="btn btn-secondary me-2" 
+                      onClick={handleCloseModal}
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="submit" 
+                      className="btn btn-primary"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                          {editMode ? 'Updating...' : 'Adding...'}
+                        </>
+                      ) : (
+                        editMode ? 'Update Entry' : 'Add Entry'
+                      )}
+                    </button>
+                  </div>
                 </form>
               </div>
             </div>
@@ -561,71 +902,125 @@ function AddEntry() {
       )}
 
       {/* Display Journal Entries in a Table */}
-      <table className="table table-striped table-bordered">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Instrument</th>
-            <th>Direction</th>
-            <th>Outcome</th>
-            <th>Risk Management</th>
-            <th>Feeling During</th>
-            <th>Additional Comments</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {entries.length === 0 ? (
+      <div className="table-responsive">
+        <table className="table table-striped table-bordered">
+          <thead>
             <tr>
-              <td colSpan="8" className="text-center">No entries found. Add your first entry!</td>
+              <th>Date</th>
+              <th>Instrument</th>
+              <th>Direction</th>
+              <th>Outcome</th>
+              <th>Risk:Reward</th>
+              <th>P&L</th>
+              <th>Risk Management</th>
+              <th>Feeling During</th>
+              <th>Images</th>
+              <th>Actions</th>
             </tr>
-          ) : (
-            entries.map((entry) => (
-              <tr key={entry.id}>
-                <td>{entry.date}</td>
-                <td>{entry.instrument}</td>
-                <td>{entry.direction}</td>
-                <td>{entry.outcome}</td>
-                <td>{entry.risk_management}</td>
-                <td>
-                  {entry.feeling_during && entry.feeling_during.map((feeling, idx) => (
-                    <span 
-                      key={idx} 
-                      className="badge bg-primary me-1"
-                      style={{ 
-                        borderRadius: '12px', 
-                        padding: '5px 10px',
-                        margin: '2px'
-                      }}
-                    >
-                      {feeling}
-                    </span>
-                  ))}
-                </td>
-                <td>{entry.additional_comments}</td>
-                <td>
-                  <div className="btn-group" role="group">
-                    <button
-                      className="btn btn-sm btn-outline-primary"
-                      onClick={() => handleEdit(entry)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="btn btn-sm btn-outline-danger ms-1"
-                      onClick={() => handleDeleteClick(entry)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </td>
+          </thead>
+          <tbody>
+          {entries.length === 0 ? (
+              <tr>
+                <td colSpan="10" className="text-center">No entries found. Add your first entry!</td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            ) : (
+              entries.map((entry) => (
+                <tr key={entry.id}>
+                  <td>{entry.date}</td>
+                  <td>{entry.instrument}</td>
+                  <td>{entry.direction}</td>
+                  <td>{entry.outcome}</td>
+                  <td>{entry.risk_reward_ratio || ''}</td>
+                  <td className={entry.profit_loss > 0 ? 'text-success' : entry.profit_loss < 0 ? 'text-danger' : ''}>
+                    {formatNumber(entry.profit_loss)}
+                  </td>
+                  <td>{entry.risk_management}</td>
+                  <td>
+                    {entry.feeling_during && entry.feeling_during.map((feeling, idx) => (
+                      <span 
+                        key={idx} 
+                        className="badge bg-primary me-1"
+                        style={{ 
+                          borderRadius: '12px', 
+                          padding: '5px 10px',
+                          margin: '2px'
+                        }}
+                      >
+                        {feeling}
+                      </span>
+                    ))}
+                  </td>
+                  <td>
+                    {entry.images && entry.images.length > 0 && (
+                      <div className="d-flex flex-wrap">
+                        {entry.images.slice(0, 2).map((image, idx) => (
+                          <img 
+                            key={idx}
+                            src={image}
+                            alt={`Trade image ${idx + 1}`}
+                            style={{ 
+                              width: '40px', 
+                              height: '40px', 
+                              objectFit: 'cover',
+                              margin: '2px',
+                              borderRadius: '4px',
+                              cursor: 'pointer'
+                            }}
+                            onClick={(e) => handleImageClick(image, e)}
+                          />
+                        ))}
+                        {entry.images.length > 2 && (
+                          <span 
+                            className="badge bg-secondary"
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'center',
+                              width: '40px', 
+                              height: '40px',
+                              margin: '2px',
+                              cursor: 'pointer'
+                            }}
+                            onClick={(e) => handleImageClick(entry.images[2], e)}
+                          >
+                            +{entry.images.length - 2}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </td>
+                  <td>
+                    <div className="btn-group" role="group">
+                      <button
+                        className="btn btn-sm btn-outline-primary"
+                        onClick={() => handleEdit(entry)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="btn btn-sm btn-outline-danger ms-1"
+                        onClick={() => handleDeleteClick(entry)}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Image Modal */}
+      <ImageModal 
+        imageUrl={selectedImageUrl} 
+        isOpen={showImageModal} 
+        onClose={handleCloseImageModal} 
+      />
     </div>
   );
 }
 
 export default AddEntry;
+                
