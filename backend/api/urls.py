@@ -20,6 +20,15 @@ urlpatterns = [
     # Image handling endpoints
     path("journal/<int:journal_id>/entries/<int:entry_id>/images/upload/", views.EntryImageUploadView.as_view(), name="entry-image-upload"),
     path("journal/<int:journal_id>/entries/<int:entry_id>/images/<int:image_id>/delete/", views.EntryImageDeleteView.as_view(), name="entry-image-delete"),
+
+
+    path('user/profile/', views.UserProfileView.as_view(), name='user-profile'),
+    path('user/update-username/', views.UpdateUsernameView.as_view(), name='update-username'),
+    path('user/update-password/', views.UpdatePasswordView.as_view(), name='update-password'),
+    path('user/update-profile-picture/', views.UpdateProfilePictureView.as_view(), name='update-profile-picture'),
+    path('user/delete-account/', views.DeleteAccountView.as_view(), name='delete-account'),
+
+    
 ]
 
 if settings.DEBUG:

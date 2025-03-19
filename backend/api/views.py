@@ -10,6 +10,10 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 import os
 from django.conf import settings
+from django.contrib.auth import authenticate
+from rest_framework.parsers import MultiPartParser, FormParser
+from .models import UserProfile
+from .serializers import UserProfileSerializer, UserProfileDetailSerializer
 
 # User creation view
 class CreateUserView(generics.CreateAPIView):
@@ -310,3 +314,137 @@ class EntryImageDeleteView(APIView):
             return Response({"error": "Image not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+
+# profile views
+
+
+class UserProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """Get the user's profile data"""
+        try:
+            # Get or create the user's profile
+            profile, created = UserProfile.objects.get_or_create(user=request.user)
+            
+            serializer = UserProfileDetailSerializer(profile, context={'request': request})
+            return Response(serializer.data)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class UpdateUsernameView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def put(self, request):
+        """Update the user's username"""
+        try:
+            # Get form data
+            username = request.data.get('username')
+            password = request.data.get('password')
+            
+            if not username or not password:
+                return Response({"detail": "Username and password are required."}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+            # Verify the password
+            user = authenticate(username=request.user.username, password=password)
+            if not user:
+                return Response({"detail": "Incorrect password."}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+            # Check if username is already taken
+            if User.objects.filter(username=username).exclude(id=request.user.id).exists():
+                return Response({"detail": "This username is already taken."}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+            # Update username
+            request.user.username = username
+            request.user.save()
+            
+            return Response({"detail": "Username updated successfully."})
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class UpdatePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def put(self, request):
+        """Update the user's password"""
+        try:
+            # Get form data
+            current_password = request.data.get('current_password')
+            new_password = request.data.get('new_password')
+            
+            if not current_password or not new_password:
+                return Response({"detail": "Current password and new password are required."}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+            # Verify current password
+            user = authenticate(username=request.user.username, password=current_password)
+            if not user:
+                return Response({"detail": "Incorrect current password."}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+            # Update password
+            user.set_password(new_password)
+            user.save()
+            
+            return Response({"detail": "Password updated successfully."})
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class UpdateProfilePictureView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+    
+    def put(self, request):
+        """Update the user's profile picture"""
+        try:
+            # Get or create the user's profile
+            profile, created = UserProfile.objects.get_or_create(user=request.user)
+            
+            # Check if a file was uploaded
+            if 'profile_picture' not in request.FILES:
+                return Response({"detail": "No image file provided."}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+            # Update profile picture
+            profile.profile_picture = request.FILES['profile_picture']
+            profile.save()
+            
+            serializer = UserProfileSerializer(profile, context={'request': request})
+            return Response({
+                "detail": "Profile picture updated successfully.",
+                "profile_picture": request.build_absolute_uri(profile.profile_picture.url)
+            })
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class DeleteAccountView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def delete(self, request):
+        """Delete the user's account"""
+        try:
+            # Get form data
+            password = request.data.get('password')
+            
+            if not password:
+                return Response({"detail": "Password is required."}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+            # Verify password
+            user = authenticate(username=request.user.username, password=password)
+            if not user:
+                return Response({"detail": "Incorrect password."}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+            # Delete the user (and all related data due to CASCADE)
+            user_id = request.user.id
+            request.user.delete()
+            
+            return Response({"detail": "Account deleted successfully."})
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 from rest_framework import serializers
 from .models import Journal, JournalEntry, EntryImage
 import json
+from .models import UserProfile
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -82,3 +83,26 @@ class JournalEntrySerializer(serializers.ModelSerializer):
             'risk_reward_ratio': {'required': False},
             'profit_loss': {'required': False},
         }
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ['profile_picture']
+
+class UserProfileDetailSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    email = serializers.EmailField(source='user.email', read_only=True)
+    profile_picture = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = UserProfile
+        fields = ['username', 'email', 'profile_picture']
+    
+    def get_profile_picture(self, obj):
+        if obj.profile_picture:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.profile_picture.url)
+            return obj.profile_picture.url
+        return None
