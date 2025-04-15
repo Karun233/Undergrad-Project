@@ -13,8 +13,11 @@
     "axios": "^1.7.9",
     "bootstrap": "^5.3.3",
     "jwt-decode": "^4.0.0",
+    "plotly.js": "^3.0.1",
     "react": "^18.3.1",
+    "react-bootstrap": "^2.10.9",
     "react-dom": "^18.3.1",
+    "react-plotly.js": "^2.6.0",
     "react-router-dom": "^7.0.2",
     "react-select": "^5.10.0"
   },

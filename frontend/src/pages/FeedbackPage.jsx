@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import { ACCESS_TOKEN } from "../constants";
+import MonteCarloSimulation from '../components/MonteCarloSimulation';
 
 // Your API base URL (should match what you use in other components)
 const API_BASE_URL = 'http://localhost:8000/api';
@@ -294,6 +295,13 @@ function Dashboard() {
             </div>
           </div>
         </div>
+        
+        {/* Monte Carlo Simulation Section */}
+        <MonteCarloSimulation 
+          tradeReturns={entries.map(e => parseFloat(e.profit_loss) / 100)} 
+          initialBalance={10000} 
+          numSimulations={1000} 
+        />
       </div>
     </div>
   );
