@@ -17,7 +17,7 @@ class UserSerializer(serializers.ModelSerializer):
 class JournalSerializer(serializers.ModelSerializer):
     class Meta:
         model = Journal
-        fields = ["id", "title", "description", "owner", "created_at"]
+        fields = ["id", "title", "description", "owner", "created_at", "max_risk"]
         read_only_fields = ["owner"]
 
 class EntryImageSerializer(serializers.ModelSerializer):
@@ -68,6 +68,7 @@ class JournalEntrySerializer(serializers.ModelSerializer):
             'direction',
             'outcome',
             'risk_management',
+            'follow_strategy',
             'feeling_before',
             'feeling_during_text',
             'review',

@@ -2,6 +2,26 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Select from 'react-select';
 
+// Helper to format date as '11th April 2025'
+function formatDate(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const day = date.getDate();
+  const month = date.toLocaleString('default', { month: 'long' });
+  const year = date.getFullYear();
+  // Get ordinal suffix
+  const getOrdinal = (n) => {
+    if (n > 3 && n < 21) return 'th';
+    switch (n % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
+    }
+  };
+  return `${day}${getOrdinal(day)} ${month} ${year}`;
+}
+
 function JournalEntries({ journalId }) {
   const [entries, setEntries] = useState([]);
   const [error, setError] = useState(null);
@@ -205,10 +225,11 @@ function JournalEntries({ journalId }) {
         <p>No entries yet.</p>
       ) : (
         <div className="table-responsive mt-3">
-          <table className="table table-bordered table-striped">
+          <table className="table table-bordered table-striped compact-journal-table">
             <thead>
               <tr>
                 <th>Date</th>
+                <th>Followed Strategy</th>
                 <th>Instrument</th>
                 <th>Direction</th>
                 <th>Outcome</th>
@@ -226,7 +247,8 @@ function JournalEntries({ journalId }) {
             <tbody>
               {entries.map((entry, index) => (
                 <tr key={index}>
-                  <td>{entry.date}</td>
+                  <td>{formatDate(entry.date)}</td>
+                  <td>{entry.follow_strategy === true ? 'Yes' : entry.follow_strategy === false ? 'No' : ''}</td>
                   <td>{entry.instrument}</td>
                   <td>{entry.direction}</td>
                   <td>{entry.outcome}</td>

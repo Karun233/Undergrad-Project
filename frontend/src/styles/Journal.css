@@ -50,3 +50,22 @@
 .journal-title { color: inherit; }
 .journal-description { color: inherit; }
 .delete-button { background: none; border: none; }
+
+/* Compact journal table styling */
+.compact-journal-table th,
+.compact-journal-table td {
+  padding: 0.3rem 0.5rem;
+  font-size: 0.92rem;
+  vertical-align: middle;
+}
+.compact-journal-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+}
+.compact-journal-table img {
+  width: 32px !important;
+  height: 32px !important;
+  object-fit: cover;
+  border-radius: 3px;
+  margin: 1px;
+}

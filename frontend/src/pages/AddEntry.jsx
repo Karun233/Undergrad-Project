@@ -498,16 +498,19 @@ function AddEntry() {
   // Reset form and modal state
   const resetForm = () => {
     setFormData({
-      date: '',
+      date: new Date().toISOString().slice(0, 10), // Current date in YYYY-MM-DD format
       instrument: '',
       direction: 'Buy',
       outcome: 'Win',
       risk_management: '',
-      feeling_during: [],
-      additional_comments: '',
+      follow_strategy: true, // Default to true for following strategy
+      feeling_before: '',
+      feeling_during_text: '',
+      review: '',
+      risk_percent: '',
       risk_reward_ratio: '',
       profit_loss: '',
-      risk_percent: '',
+      additional_comments: '',
     });
     setSelectedImages([]);
     setFeelingBefore('');
@@ -656,6 +659,28 @@ function AddEntry() {
     return `${sign}${num.toFixed(2)}`;
   };
 
+  // Format date as '11th April 2025'
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const day = date.getDate();
+    const month = date.toLocaleString('default', { month: 'long' });
+    const year = date.getFullYear();
+    
+    // Get ordinal suffix
+    const getOrdinal = (n) => {
+      if (n > 3 && n < 21) return 'th';
+      switch (n % 10) {
+        case 1: return 'st';
+        case 2: return 'nd';
+        case 3: return 'rd';
+        default: return 'th';
+      }
+    };
+    
+    return `${day}${getOrdinal(day)} ${month} ${year}`;
+  };
+
   // Ensure entries is an array before rendering
   if (!Array.isArray(entries)) {
     console.error('Entries is not an array:', entries);
@@ -680,10 +705,11 @@ function AddEntry() {
             </div>
             <div className="card-body p-0">
               <div className="table-responsive">
-                <table className="table table-hover mb-0">
+                <table className="table table-hover mb-0 compact-journal-table">
                   <thead>
                     <tr>
                       <th>Date</th>
+                      <th>Followed Strategy</th>
                       <th>Instrument</th>
                       <th>Direction</th>
                       <th>Outcome</th>
@@ -706,7 +732,8 @@ function AddEntry() {
                     ) : (
                       entries.map((entry) => (
                         <tr key={entry.id}>
-                          <td>{entry.date}</td>
+                          <td>{formatDate(entry.date)}</td>
+                          <td>{entry.follow_strategy === true ? 'Yes' : entry.follow_strategy === false ? 'No' : ''}</td>
                           <td>{entry.instrument}</td>
                           <td>{entry.direction}</td>
                           <td>{entry.outcome}</td>
@@ -979,7 +1006,7 @@ function AddEntry() {
                   
                   {/* Risk Management Input */}
                   <div className="mb-3">
-                    <label htmlFor="risk_management" className="form-label">Risk Management</label>
+                    <label htmlFor="risk_management" className="form-label">Risk Management Strategy</label>
                     <textarea
                       className="form-control"
                       id="risk_management"
@@ -988,6 +1015,20 @@ function AddEntry() {
                       onChange={handleChange}
                       required
                     />
+                  </div>
+                  
+                  {/* Follow Strategy Checkbox */}
+                  <div className="mb-3 form-check">
+                    <input
+                      type="checkbox"
+                      className="form-check-input"
+                      id="follow_strategy"
+                      checked={formData.follow_strategy}
+                      onChange={(e) => setFormData({...formData, follow_strategy: e.target.checked})}
+                    />
+                    <label className="form-check-label" htmlFor="follow_strategy">
+                      I followed my trading strategy for this trade
+                    </label>
                   </div>
                   
                   {/* Additional Comments Input */}

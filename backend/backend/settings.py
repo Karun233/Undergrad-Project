@@ -20,6 +20,9 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# OpenAI API settings
+OPENAI_API_KEY = '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'
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/

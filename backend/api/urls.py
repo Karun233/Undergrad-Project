@@ -28,6 +28,8 @@ urlpatterns = [
     path('user/update-profile-picture/', views.UpdateProfilePictureView.as_view(), name='update-profile-picture'),
     path('user/delete-account/', views.DeleteAccountView.as_view(), name='delete-account'),
 
+    # AI trading feedback
+    path('journal/<int:journal_id>/generate-feedback/', views.TradingFeedbackView.as_view(), name='generate-trading-feedback'),
     
 ]
 

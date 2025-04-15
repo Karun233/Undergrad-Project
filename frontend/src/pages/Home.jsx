@@ -7,6 +7,7 @@ function Home() {
   const [journals, setJournals] = useState([]);
   const [description, setDescription] = useState("");
   const [title, setTitle] = useState("");
+  const [maxRisk, setMaxRisk] = useState(1.0);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
@@ -38,7 +39,11 @@ function Home() {
   const createJournal = (e) => {
     e.preventDefault();
     api
-      .post("/api/journal/", { description, title })
+      .post("/api/journal/", { 
+        description, 
+        title, 
+        max_risk: parseFloat(maxRisk)
+      })
       .then((res) => {
         if (res.status === 201) alert("Journal was created.");
         else alert("Failed to create Journal");
@@ -58,6 +63,7 @@ function Home() {
     setIsModalOpen(false);
     setTitle("");
     setDescription("");
+    setMaxRisk(1.0);
   };
 
   // Stop propagation to prevent clicks inside the modal from closing it
@@ -156,6 +162,36 @@ function Home() {
                     resize: 'vertical'
                   }}
                 ></textarea>
+              </div>
+              
+              <div className="form-group" style={{ marginBottom: '15px' }}>
+                <label htmlFor="maxRisk" style={{ display: 'block', marginBottom: '5px' }}>
+                  Maximum Risk Per Trade (%):
+                  <span className="text-muted" style={{ fontSize: '0.85rem', marginLeft: '5px' }}>
+                    (Used for risk management analysis)
+                  </span>
+                </label>
+                <input
+                  type="number"
+                  id="maxRisk"
+                  name="maxRisk"
+                  required
+                  min="0.1"
+                  max="100"
+                  step="0.1"
+                  value={maxRisk}
+                  onChange={(e) => setMaxRisk(e.target.value)}
+                  placeholder="Enter maximum risk percentage"
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    borderRadius: '4px',
+                    border: '1px solid #ddd'
+                  }}
+                />
+                <small className="text-muted" style={{ display: 'block', marginTop: '5px' }}>
+                  This is the maximum percentage of your account you're willing to risk on a single trade.
+                </small>
               </div>
               
               <div className="form-buttons" style={{ display: 'flex', justifyContent: 'space-between' }}>

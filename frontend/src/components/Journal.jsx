@@ -22,7 +22,12 @@ function Journal({ journal, onDelete }) {
     <div className="journal">
       <h3>{journal.title}</h3>
       <p>{journal.description}</p>
-      <p className="journal-date">{formattedDate}</p>
+      <div className="journal-meta">
+        <p className="journal-date">{formattedDate}</p>
+        <p className="journal-risk">
+          <span className="risk-label">Max Risk:</span> {journal.max_risk}%
+        </p>
+      </div>
       
       <div className="journal-buttons">
         <Link to={`/journal/${journal.id}/add-entry`}>

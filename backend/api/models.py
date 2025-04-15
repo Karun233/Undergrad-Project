@@ -7,6 +7,7 @@ class Journal(models.Model):
     title = models.CharField(max_length=100)
     description = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    max_risk = models.DecimalField(max_digits=5, decimal_places=2, default=1.0, help_text="Maximum risk percentage allowed per trade")
 
     def __str__(self):
         return self.title
@@ -41,6 +42,8 @@ class JournalEntry(models.Model):
     direction = models.CharField(max_length=50, choices=DIRECTION_CHOICES)
     outcome = models.CharField(max_length=50, choices=OUTCOME_CHOICES)
     risk_management = models.TextField()
+    # Whether trader followed their strategy
+    follow_strategy = models.BooleanField(default=True, help_text="Did you follow your trading strategy for this trade?")
     # New fields for emotion tracking and review
     feeling_before = models.TextField(blank=True, null=True)
     feeling_during_text = models.TextField(blank=True, null=True)
