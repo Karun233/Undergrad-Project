@@ -41,21 +41,16 @@ class JournalEntry(models.Model):
     direction = models.CharField(max_length=50, choices=DIRECTION_CHOICES)
     outcome = models.CharField(max_length=50, choices=OUTCOME_CHOICES)
     risk_management = models.TextField()
-    # Modified with default validator and return empty list if null
-    feeling_during = ArrayField(
-        models.CharField(max_length=50), 
-        blank=True, 
-        null=True,
-        default=list
-    )
+    # New fields for emotion tracking and review
+    feeling_before = models.TextField(blank=True, null=True)
+    feeling_during_text = models.TextField(blank=True, null=True)
+    review = models.TextField(blank=True, null=True)
+    # Amount risked as a percentage
+    risk_percent = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, help_text="Percentage of account risked on this trade")
     additional_comments = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    
-    # New fields for risk-to-reward and P&L
     risk_reward_ratio = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     profit_loss = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    
-    # Field for storing image paths - also modified to handle null better
     images = ArrayField(
         models.CharField(max_length=255), 
         blank=True, 
@@ -67,18 +62,11 @@ class JournalEntry(models.Model):
         return f"Entry for {self.journal.title} on {self.date}"
     
     def save(self, *args, **kwargs):
-        # Ensure feeling_during is a list of strings before saving
-        if self.feeling_during is None:
-            self.feeling_during = []
-        else:
-            self.feeling_during = [str(item) for item in self.feeling_during if item]
-        
         # Ensure images is a list of strings before saving
         if self.images is None:
             self.images = []
         else:
             self.images = [str(item) for item in self.images if item]
-            
         super().save(*args, **kwargs)
 
 class EntryImage(models.Model):

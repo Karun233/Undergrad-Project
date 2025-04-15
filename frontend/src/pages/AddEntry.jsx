@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { OverlayTrigger, Tooltip } from 'react-bootstrap';
 // Import your token constants
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
 import Navbar from '../components/Navbar';
@@ -346,7 +347,12 @@ function AddEntry() {
     additional_comments: '',
     risk_reward_ratio: '',  // New field
     profit_loss: '',        // New field
+    risk_percent: '',       // New field
   });
+
+  const [feelingBefore, setFeelingBefore] = useState('');
+  const [feelingDuring, setFeelingDuring] = useState('');
+  const [review, setReview] = useState('');
 
   // Function to handle image click for modal display
   const handleImageClick = (imageUrl, e) => {
@@ -456,6 +462,7 @@ function AddEntry() {
       additional_comments: entry.additional_comments || '',
       risk_reward_ratio: entry.risk_reward_ratio || '',
       profit_loss: entry.profit_loss || '',
+      risk_percent: entry.risk_percent || '',
     });
     
     // Set selected images to the existing images from the entry
@@ -500,8 +507,12 @@ function AddEntry() {
       additional_comments: '',
       risk_reward_ratio: '',
       profit_loss: '',
+      risk_percent: '',
     });
     setSelectedImages([]);
+    setFeelingBefore('');
+    setFeelingDuring('');
+    setReview('');
     setEditMode(false);
     setCurrentEntryId(null);
     setShowModal(false);
@@ -528,6 +539,11 @@ function AddEntry() {
           formDataToSend.append(key, formData[key]);
         }
       });
+      
+      // Append new fields
+      formDataToSend.append('feeling_before', feelingBefore);
+      formDataToSend.append('feeling_during_text', feelingDuring);
+      formDataToSend.append('review', review);
       
       // Append image files if there are any new image files (not URLs)
       const newImageFiles = selectedImages.filter(image => typeof image !== 'string');
@@ -647,17 +663,127 @@ function AddEntry() {
   }
 
   return (
-    <div className="container mt-4">
+    <div className="container-fluid mt-4">
       <Navbar />
-      <h2>Journal Entries for Journal {id}</h2>
-
-      {/* Button to open the modal for adding a new entry */}
-      <button
-        className="btn btn-primary mb-4"
-        onClick={handleAddNew}
-      >
-        Add New Entry
-      </button>
+      <div className="row">
+        <div className="col-12">
+          <div className="card">
+            <div className="card-header">
+              <h2 className="card-title">Journal Entries for Journal {id}</h2>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleAddNew}
+              >
+                Add New Entry
+              </button>
+            </div>
+            <div className="card-body p-0">
+              <div className="table-responsive">
+                <table className="table table-hover mb-0">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Instrument</th>
+                      <th>Direction</th>
+                      <th>Outcome</th>
+                      <th>Risk:Reward</th>
+                      <th>P&L</th>
+                      <th>Risk %</th>
+                      <th>Risk Management</th>
+                      <th>Feeling Before</th>
+                      <th>Feeling During</th>
+                      <th>Review</th>
+                      <th>Images</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                  {entries.length === 0 ? (
+                      <tr>
+                        <td colSpan="13" className="text-center">No entries found. Add your first entry!</td>
+                      </tr>
+                    ) : (
+                      entries.map((entry) => (
+                        <tr key={entry.id}>
+                          <td>{entry.date}</td>
+                          <td>{entry.instrument}</td>
+                          <td>{entry.direction}</td>
+                          <td>{entry.outcome}</td>
+                          <td>{entry.risk_reward_ratio || ''}</td>
+                          <td className={entry.profit_loss > 0 ? 'text-success' : entry.profit_loss < 0 ? 'text-danger' : ''}>
+                            {formatNumber(entry.profit_loss)}
+                          </td>
+                          <td>{entry.risk_percent !== undefined && entry.risk_percent !== null && entry.risk_percent !== '' ? `${parseFloat(entry.risk_percent).toFixed(2)}%` : ''}</td>
+                          <td>{entry.risk_management}</td>
+                          <td>{entry.feeling_before}</td>
+                          <td>{entry.feeling_during_text}</td>
+                          <td>{entry.review}</td>
+                          <td>
+                            {entry.images && entry.images.length > 0 && (
+                              <div className="d-flex flex-wrap">
+                                {entry.images.slice(0, 2).map((image, idx) => (
+                                  <img 
+                                    key={idx}
+                                    src={image}
+                                    alt={`Trade image ${idx + 1}`}
+                                    style={{ 
+                                      width: '40px', 
+                                      height: '40px', 
+                                      objectFit: 'cover',
+                                      margin: '2px',
+                                      borderRadius: '4px',
+                                      cursor: 'pointer'
+                                    }}
+                                    onClick={(e) => handleImageClick(image, e)}
+                                  />
+                                ))}
+                                {entry.images.length > 2 && (
+                                  <span 
+                                    className="badge bg-secondary"
+                                    style={{ 
+                                      display: 'flex', 
+                                      alignItems: 'center', 
+                                      justifyContent: 'center',
+                                      width: '40px', 
+                                      height: '40px',
+                                      margin: '2px',
+                                      cursor: 'pointer'
+                                    }}
+                                    onClick={(e) => handleImageClick(entry.images[2], e)}
+                                  >
+                                    +{entry.images.length - 2}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </td>
+                          <td>
+                            <div className="btn-group" role="group">
+                              <button
+                                className="btn btn-sm btn-outline-primary"
+                                onClick={() => handleEdit(entry)}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                className="btn btn-sm btn-outline-danger ms-1"
+                                onClick={() => handleDeleteClick(entry)}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Modal for Add/Edit Entry Form */}
       {showModal && (
@@ -783,15 +909,72 @@ function AddEntry() {
                         />
                       </div>
                       
-                      {/* Feeling During Multi-Select */}
+                      {/* Amount Risked (%) Input */}
                       <div className="mb-3">
-                        <label className="form-label">Feeling During Trade</label>
-                        <EmotionMultiSelect 
-                          selectedEmotions={formData.feeling_during}
-                          onChange={handleEmotionChange}
+                        <label>
+                          Amount Risked (%)
+                          <OverlayTrigger placement="right" overlay={<Tooltip>Enter the percentage of your account you risked on this trade.</Tooltip>}>
+                            <span style={{cursor: 'pointer', marginLeft: 5, color: '#17a2b8'}}><i className="bi bi-info-circle"></i></span>
+                          </OverlayTrigger>
+                        </label>
+                        <input
+                          type="number"
+                          className="form-control"
+                          value={formData.risk_percent || ''}
+                          min="0" max="100" step="0.01"
+                          onChange={e => setFormData({ ...formData, risk_percent: e.target.value })}
+                          placeholder="e.g. 1.5"
                         />
                       </div>
                     </div>
+                  </div>
+                  
+                  {/* Feeling Before Trade */}
+                  <div className="mb-3">
+                    <label>
+                      Feeling Before Trade
+                      <OverlayTrigger placement="right" overlay={<Tooltip>How did you feel before placing the trade? Scared? Hesitant or calm? Please detail.</Tooltip>}>
+                        <span style={{cursor: 'pointer', marginLeft: 5, color: '#17a2b8'}}><i className="bi bi-info-circle"></i></span>
+                      </OverlayTrigger>
+                    </label>
+                    <textarea 
+                      className="form-control" 
+                      value={feelingBefore} 
+                      onChange={e => setFeelingBefore(e.target.value)} 
+                      placeholder="Describe your feelings before the trade..." 
+                    />
+                  </div>
+                  
+                  {/* Feeling During Trade */}
+                  <div className="mb-3">
+                    <label>
+                      Feeling During Trade
+                      <OverlayTrigger placement="right" overlay={<Tooltip>How did you feel during the trade? Were you monitoring constantly, anxious, or relaxed? Please detail.</Tooltip>}>
+                        <span style={{cursor: 'pointer', marginLeft: 5, color: '#17a2b8'}}><i className="bi bi-info-circle"></i></span>
+                      </OverlayTrigger>
+                    </label>
+                    <textarea 
+                      className="form-control" 
+                      value={feelingDuring} 
+                      onChange={e => setFeelingDuring(e.target.value)} 
+                      placeholder="Describe your feelings during the trade..." 
+                    />
+                  </div>
+                  
+                  {/* Review */}
+                  <div className="mb-3">
+                    <label>
+                      Review
+                      <OverlayTrigger placement="right" overlay={<Tooltip>Reflect on your emotions and decision after the trade. Regretful, proud, or something else?</Tooltip>}>
+                        <span style={{cursor: 'pointer', marginLeft: 5, color: '#17a2b8'}}><i className="bi bi-info-circle"></i></span>
+                      </OverlayTrigger>
+                    </label>
+                    <textarea 
+                      className="form-control" 
+                      value={review} 
+                      onChange={e => setReview(e.target.value)} 
+                      placeholder="Reflect on the trade and your emotions after it..." 
+                    />
                   </div>
                   
                   {/* Risk Management Input */}
@@ -901,117 +1084,6 @@ function AddEntry() {
         </div>
       )}
 
-      {/* Display Journal Entries in a Table */}
-      <div className="table-responsive">
-        <table className="table table-striped table-bordered">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Instrument</th>
-              <th>Direction</th>
-              <th>Outcome</th>
-              <th>Risk:Reward</th>
-              <th>P&L</th>
-              <th>Risk Management</th>
-              <th>Feeling During</th>
-              <th>Images</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-          {entries.length === 0 ? (
-              <tr>
-                <td colSpan="10" className="text-center">No entries found. Add your first entry!</td>
-              </tr>
-            ) : (
-              entries.map((entry) => (
-                <tr key={entry.id}>
-                  <td>{entry.date}</td>
-                  <td>{entry.instrument}</td>
-                  <td>{entry.direction}</td>
-                  <td>{entry.outcome}</td>
-                  <td>{entry.risk_reward_ratio || ''}</td>
-                  <td className={entry.profit_loss > 0 ? 'text-success' : entry.profit_loss < 0 ? 'text-danger' : ''}>
-                    {formatNumber(entry.profit_loss)}
-                  </td>
-                  <td>{entry.risk_management}</td>
-                  <td>
-                    {entry.feeling_during && entry.feeling_during.map((feeling, idx) => (
-                      <span 
-                        key={idx} 
-                        className="badge bg-primary me-1"
-                        style={{ 
-                          borderRadius: '12px', 
-                          padding: '5px 10px',
-                          margin: '2px'
-                        }}
-                      >
-                        {feeling}
-                      </span>
-                    ))}
-                  </td>
-                  <td>
-                    {entry.images && entry.images.length > 0 && (
-                      <div className="d-flex flex-wrap">
-                        {entry.images.slice(0, 2).map((image, idx) => (
-                          <img 
-                            key={idx}
-                            src={image}
-                            alt={`Trade image ${idx + 1}`}
-                            style={{ 
-                              width: '40px', 
-                              height: '40px', 
-                              objectFit: 'cover',
-                              margin: '2px',
-                              borderRadius: '4px',
-                              cursor: 'pointer'
-                            }}
-                            onClick={(e) => handleImageClick(image, e)}
-                          />
-                        ))}
-                        {entry.images.length > 2 && (
-                          <span 
-                            className="badge bg-secondary"
-                            style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              justifyContent: 'center',
-                              width: '40px', 
-                              height: '40px',
-                              margin: '2px',
-                              cursor: 'pointer'
-                            }}
-                            onClick={(e) => handleImageClick(entry.images[2], e)}
-                          >
-                            +{entry.images.length - 2}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </td>
-                  <td>
-                    <div className="btn-group" role="group">
-                      <button
-                        className="btn btn-sm btn-outline-primary"
-                        onClick={() => handleEdit(entry)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="btn btn-sm btn-outline-danger ms-1"
-                        onClick={() => handleDeleteClick(entry)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
       {/* Image Modal */}
       <ImageModal 
         imageUrl={selectedImageUrl} 
@@ -1023,4 +1095,3 @@ function AddEntry() {
 }
 
 export default AddEntry;
-                

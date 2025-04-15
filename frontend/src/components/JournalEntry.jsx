@@ -199,18 +199,92 @@ function JournalEntries({ journalId }) {
         </div>
       </div>
 
-      {/* Display Entries */}
+      {/* Table for displaying entries */}
       {error ? <p>{error}</p> : null}
       {entries.length === 0 ? (
         <p>No entries yet.</p>
       ) : (
-        <ul className="list-group mt-3">
-          {entries.map((entry, index) => (
-            <li key={index} className="list-group-item">
-              <strong>{entry.date}</strong> - {entry.instrument} - {entry.direction} - {entry.outcome}
-            </li>
-          ))}
-        </ul>
+        <div className="table-responsive mt-3">
+          <table className="table table-bordered table-striped">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Instrument</th>
+                <th>Direction</th>
+                <th>Outcome</th>
+                <th>Risk:Reward</th>
+                <th>P&L</th>
+                <th>Risk %</th>
+                <th>Risk Management</th>
+                <th>Feeling Before</th>
+                <th>Feeling During</th>
+                <th>Review</th>
+                <th>Images</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {entries.map((entry, index) => (
+                <tr key={index}>
+                  <td>{entry.date}</td>
+                  <td>{entry.instrument}</td>
+                  <td>{entry.direction}</td>
+                  <td>{entry.outcome}</td>
+                  <td>{entry.risk_reward_ratio || ''}</td>
+                  <td className={entry.profit_loss > 0 ? 'text-success' : entry.profit_loss < 0 ? 'text-danger' : ''}>
+                    {entry.profit_loss !== undefined && entry.profit_loss !== null && entry.profit_loss !== '' ? parseFloat(entry.profit_loss).toFixed(2) : ''}
+                  </td>
+                  <td>{entry.risk_percent !== undefined && entry.risk_percent !== null && entry.risk_percent !== '' ? `${parseFloat(entry.risk_percent).toFixed(2)}%` : ''}</td>
+                  <td>{entry.risk_management}</td>
+                  <td>{entry.feeling_before}</td>
+                  <td>{entry.feeling_during_text}</td>
+                  <td>{entry.review}</td>
+                  <td>
+                    {entry.images && entry.images.length > 0 && (
+                      <div className="d-flex flex-wrap">
+                        {entry.images.slice(0, 2).map((image, idx) => (
+                          <img 
+                            key={idx}
+                            src={image}
+                            alt={`Trade image ${idx + 1}`}
+                            style={{ 
+                              width: '40px', 
+                              height: '40px', 
+                              objectFit: 'cover',
+                              margin: '2px',
+                              borderRadius: '4px',
+                              cursor: 'pointer'
+                            }}
+                            // Optional: add onClick for modal preview
+                          />
+                        ))}
+                        {entry.images.length > 2 && (
+                          <span 
+                            className="badge bg-secondary"
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'center',
+                              width: '40px', 
+                              height: '40px',
+                              margin: '2px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            +{entry.images.length - 2}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </td>
+                  <td>
+                    {/* Placeholder for Edit/Delete actions if implemented */}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

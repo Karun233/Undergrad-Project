@@ -1,58 +1,52 @@
-.journal-container {
-    width: 60%; /* Adjust width to 60% of the screen */
-    margin: 20px auto; /* Center the container horizontally and add vertical spacing */
-    padding: 15px; /* Add padding inside the container */
-    border-radius: 8px; /* Round the corners */
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
-    background-color: #fff; /* Clean white background */
-    transition: transform 0.2s ease, box-shadow 0.2s ease; /* Smooth hover effect */
-  }
-  
-  .journal-container:hover {
-    transform: translateY(-5px); /* Slight lift on hover */
-    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15); /* Enhance shadow on hover */
-  }
-  
-  .journal-content {
-    display: flex;
-    justify-content: space-between; /* Space out the content (text on left, button on right) */
-    align-items: flex-start; /* Align items to the top */
-  }
-  
-  .journal-text {
-    display: flex;
-    flex-direction: column; /* Stack the text elements vertically */
-    gap: 10px; /* Add space between title, description, and date */
-  }
-  
-  .journal-title {
-    color: #333;
-    font-size: 1.2rem;
-    font-weight: bold;
-  }
-  
-  .journal-description {
-    color: #666;
-    font-size: 1rem;
-  }
-  
-  .journal-date {
-    color: #999;
-    font-size: 0.9rem;
-  }
-  
-  .delete-button {
-    background-color: #f44336; /* Red background for the delete button */
-    color: white; /* White text */
-    border: none;
-    padding: 10px 15px; /* Add padding to the button */
-    border-radius: 5px; /* Rounded corners */
-    cursor: pointer; /* Pointer cursor on hover */
-    font-size: 1rem; /* Adjust font size */
-    transition: background-color 0.3s, transform 0.2s; /* Smooth hover effect */
-  }
-  
-  .delete-button:hover {
-    background-color: #d32f2f; /* Darker red on hover */
-  }
-  
+.journal {
+  background-color: var(--primary-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s, box-shadow 0.2s;
+  height: 100%;
+}
+
+.journal:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+}
+
+.journal h3 {
+  color: var(--text-primary);
+  margin: 0 0 0.75rem 0;
+  font-size: 1.2rem;
+}
+
+.journal p {
+  color: var(--text-secondary);
+  margin: 0 0 0.75rem 0;
+  font-size: 0.9rem;
+}
+
+.journal-date {
+  color: var(--gray-500);
+  font-size: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.journal-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: auto;
+}
+
+.journal-buttons .btn {
+  flex: 1;
+}
+
+/* Legacy selectors with minimum styling to prevent conflicts */
+.journal-container { display: block; }
+.journal-content { display: block; }
+.journal-text { display: block; }
+.journal-title { color: inherit; }
+.journal-description { color: inherit; }
+.delete-button { background: none; border: none; }

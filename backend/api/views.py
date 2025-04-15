@@ -109,7 +109,7 @@ class JournalEntryCreateView(APIView):
         
         print("Serializer errors:", serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
 class JournalEntryListView(APIView):
     permission_classes = [IsAuthenticated]
 

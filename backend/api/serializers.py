@@ -8,7 +8,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["id", "username", "password"]
-        extra_kwargs = {"password:": {"write_only": True}}
+        extra_kwargs = {"password": {"write_only": True}}
 
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)
@@ -56,7 +56,6 @@ class StringListField(serializers.Field):
 
 class JournalEntrySerializer(serializers.ModelSerializer):
     entry_images = EntryImageSerializer(many=True, read_only=True)
-    feeling_during = StringListField(required=False)
     images = StringListField(required=False)
     
     class Meta:
@@ -69,7 +68,10 @@ class JournalEntrySerializer(serializers.ModelSerializer):
             'direction',
             'outcome',
             'risk_management',
-            'feeling_during',
+            'feeling_before',
+            'feeling_during_text',
+            'review',
+            'risk_percent',
             'additional_comments',
             'created_at',
             'risk_reward_ratio',
@@ -82,6 +84,7 @@ class JournalEntrySerializer(serializers.ModelSerializer):
             'journal': {'required': False},
             'risk_reward_ratio': {'required': False},
             'profit_loss': {'required': False},
+            'risk_percent': {'required': False},
         }
 
 
