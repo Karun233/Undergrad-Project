@@ -51,21 +51,170 @@
 .journal-description { color: inherit; }
 .delete-button { background: none; border: none; }
 
-/* Compact journal table styling */
-.compact-journal-table th,
-.compact-journal-table td {
-  padding: 0.3rem 0.5rem;
-  font-size: 0.92rem;
-  vertical-align: middle;
+/* Journal entries table styling */
+.journal-entries-table {
+  width: 100%;
+  table-layout: auto;
+  margin-bottom: 1.5rem;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid #dee2e6;
+  border-radius: 0.25rem;
+  overflow: hidden;
 }
-.compact-journal-table th {
+
+.journal-entries-table th,
+.journal-entries-table td {
+  padding: 0.75rem 0.75rem;
+  font-size: 0.95rem;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.journal-entries-table th {
   background: #f8f9fa;
   font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
-.compact-journal-table img {
-  width: 32px !important;
-  height: 32px !important;
+
+/* Column-specific widths */
+.journal-entries-table th:nth-child(1), /* Date column */
+.journal-entries-table td:nth-child(1) {
+  min-width: 240px;
+  max-width: 240px;
+  white-space: normal;
+  font-weight: 500;
+}
+
+.journal-entries-table th:nth-child(2), /* Followed Strategy column */
+.journal-entries-table td:nth-child(2) {
+  min-width: 70px;
+  max-width: 70px;
+  text-align: center;
+}
+
+.journal-entries-table th:nth-child(3), /* Instrument column */
+.journal-entries-table td:nth-child(3) {
+  min-width: 90px;
+  max-width: 90px;
+}
+
+.journal-entries-table th:nth-child(4), /* Direction column */
+.journal-entries-table td:nth-child(4) {
+  min-width: 70px;
+  max-width: 70px;
+  text-align: center;
+}
+
+.journal-entries-table th:nth-child(5), /* Outcome column */
+.journal-entries-table td:nth-child(5) {
+  min-width: 70px;
+  max-width: 70px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.journal-entries-table th:nth-child(6), /* Risk:Reward column */
+.journal-entries-table td:nth-child(6) {
+  min-width: 80px;
+  max-width: 80px;
+  text-align: right;
+}
+
+.journal-entries-table th:nth-child(7), /* P&L column */
+.journal-entries-table td:nth-child(7) {
+  min-width: 80px;
+  max-width: 80px;
+  text-align: right;
+}
+
+.journal-entries-table th:nth-child(8), /* Risk % column */
+.journal-entries-table td:nth-child(8) {
+  min-width: 70px;
+  max-width: 70px;
+  text-align: right;
+}
+
+/* Risk Management column - making it more compact */
+.journal-entries-table th:nth-child(9),
+.journal-entries-table td:nth-child(9) {
+  min-width: 90px;
+  max-width: 90px;
+  white-space: normal;
+  font-size: 0.85rem;
+}
+
+/* Feeling Before column - making it more compact */
+.journal-entries-table th:nth-child(10),
+.journal-entries-table td:nth-child(10) {
+  min-width: 70px;
+  max-width: 70px;
+  white-space: normal;
+  font-size: 0.85rem;
+}
+
+/* Feeling During column - making it more compact */
+.journal-entries-table th:nth-child(11),
+.journal-entries-table td:nth-child(11) {
+  min-width: 70px;
+  max-width: 70px;
+  white-space: normal;
+  font-size: 0.85rem;
+}
+
+/* Review column - making it more compact */
+.journal-entries-table th:nth-child(12),
+.journal-entries-table td:nth-child(12) {
+  min-width: 90px;
+  max-width: 90px;
+  white-space: normal;
+  font-size: 0.85rem;
+}
+
+/* Images column */
+.journal-entries-table th:nth-child(13),
+.journal-entries-table td:nth-child(13) {
+  min-width: 80px;
+  max-width: 80px;
+  text-align: center;
+}
+
+/* Action buttons column */
+.journal-entries-table th:last-child,
+.journal-entries-table td:last-child {
+  min-width: 100px;
+  max-width: 100px;
+  text-align: center;
+}
+.journal-entries-table img {
+  width: 40px !important;
+  height: 40px !important;
   object-fit: cover;
-  border-radius: 3px;
-  margin: 1px;
+  border-radius: 4px;
+  margin: 2px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Make the table responsive */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  margin-bottom: 1rem;
+  border-radius: 0.25rem;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+/* Style for alternating rows */
+.journal-entries-table tbody tr:nth-of-type(odd) {
+  background-color: rgba(0,0,0,0.02);
+}
+
+.journal-entries-table tbody tr:hover {
+  background-color: rgba(0,0,0,0.05);
 }

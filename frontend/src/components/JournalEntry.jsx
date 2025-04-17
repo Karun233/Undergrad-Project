@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Select from 'react-select';
 
-// Helper to format date as '11th April 2025'
+// Helper to format date as 'Tuesday, 11th April 2025'
 function formatDate(dateString) {
   if (!dateString) return '';
   const date = new Date(dateString);
+  const dayName = date.toLocaleString('default', { weekday: 'long' });
   const day = date.getDate();
   const month = date.toLocaleString('default', { month: 'long' });
   const year = date.getFullYear();
@@ -19,7 +20,7 @@ function formatDate(dateString) {
       default: return 'th';
     }
   };
-  return `${day}${getOrdinal(day)} ${month} ${year}`;
+  return `${dayName}, ${day}${getOrdinal(day)} ${month} ${year}`;
 }
 
 function JournalEntries({ journalId }) {
@@ -225,7 +226,7 @@ function JournalEntries({ journalId }) {
         <p>No entries yet.</p>
       ) : (
         <div className="table-responsive mt-3">
-          <table className="table table-bordered table-striped compact-journal-table">
+          <table className="table table-bordered table-striped compact-journal-table journal-entries-table">
             <thead>
               <tr>
                 <th>Date</th>

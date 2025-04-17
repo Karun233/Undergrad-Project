@@ -93,6 +93,179 @@ const RiskRewardLineChart = ({ entries }) => {
   );
 };
 
+// Daily Win Rate by Day of Week Chart Component
+const DailyWinRateChart = ({ entries }) => {
+  // Skip if no entries
+  if (!entries || entries.length === 0) {
+    return (
+      <div className="col-md-6">
+        <div className="card shadow-sm mb-4">
+          <div className="card-body">
+            <h6 className="text-muted">Win Rate by Day</h6>
+            <p className="text-center">Not enough data</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Parse dates and group entries by day of week
+  // Using clearer labels to distinguish between Tuesday and Thursday
+  const dayMap = {
+    0: 'Su', // Sunday
+    1: 'M',
+    2: 'Tu',
+    3: 'W',
+    4: 'Th',
+    5: 'F',
+    6: 'Sa' // Saturday
+  };
+
+  // Initialize counters for each day with improved labels
+  const days = ['M', 'Tu', 'W', 'Th', 'F', 'Sa', 'Su'];
+  const dayTotals = {};
+  const dayWins = {};
+  
+  // Initialize the counters for each day
+  days.forEach(day => {
+    dayTotals[day] = 0;
+    dayWins[day] = 0;
+  });
+
+  // Count trades and wins for each day
+  entries.forEach(entry => {
+    if (entry.date) {
+      const date = new Date(entry.date);
+      const dayIndex = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      const dayKey = dayMap[dayIndex];
+      
+      dayTotals[dayKey]++;
+      if (entry.outcome === "Win") {
+        dayWins[dayKey]++;
+      }
+    }
+  });
+
+  // Calculate win percentage for each day
+  const winRates = days.map(day => {
+    if (dayTotals[day] === 0) return 0;
+    return (dayWins[day] / dayTotals[day]) * 100;
+  });
+
+  // Generate a sleek gradient for the bars
+  const generateGradient = (value) => {
+    // Base gradient colors
+    const topColor = value >= 70 ? 'rgba(76, 175, 80, 1)' : 
+                   value >= 50 ? 'rgba(139, 195, 74, 1)' : 
+                   value >= 30 ? 'rgba(205, 220, 57, 1)' : 'rgba(255, 193, 7, 1)';
+    
+    const bottomColor = value >= 70 ? 'rgba(76, 175, 80, 0.7)' : 
+                      value >= 50 ? 'rgba(139, 195, 74, 0.7)' : 
+                      value >= 30 ? 'rgba(205, 220, 57, 0.7)' : 'rgba(255, 193, 7, 0.7)';
+    
+    return [topColor, bottomColor];
+  };
+
+  // Prepare colors with gradients for a sleeker look
+  const colorGradients = winRates.map(generateGradient);
+
+  // Create the plot data with improved styling
+  const data = [{
+    x: days,
+    y: winRates,
+    type: 'bar',
+    marker: {
+      color: winRates.map((_, i) => colorGradients[i][0]),
+      colorscale: 'YlGn',
+      line: {
+        color: winRates.map((_, i) => colorGradients[i][1]),
+        width: 1.5
+      }
+    },
+    hovertemplate: '<b>%{y:.1f}%</b><extra></extra>',
+    width: 0.6, // Narrower bars for a sleeker look
+    // Rounded corners for the bars
+    textfont: {
+      family: 'Arial, sans-serif',
+      size: 10,
+      color: 'white'
+    }
+  }];
+
+  // Configure the layout with enhanced styling
+  const layout = {
+    autosize: true,
+    height: 220,
+    margin: { l: 40, r: 10, t: 20, b: 40 },
+    xaxis: {
+      tickfont: { 
+        size: 10,
+        family: 'Arial, sans-serif',
+        color: '#666'
+      },
+      tickangle: 0,
+      showgrid: false,
+    },
+    yaxis: {
+      title: {
+        text: 'Win %',
+        font: { 
+          size: 10,
+          family: 'Arial, sans-serif',
+          color: '#666'
+        }
+      },
+      tickfont: { 
+        size: 10,
+        family: 'Arial, sans-serif',
+        color: '#666'
+      },
+      range: [0, 100],
+      showgrid: true,
+      gridcolor: 'rgba(0,0,0,0.05)',
+      gridwidth: 1
+    },
+    showlegend: false,
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    bargap: 0.3, // Gap between bars
+    shapes: [{
+      type: 'line',
+      x0: -0.5,
+      y0: 50,
+      x1: days.length - 0.5,
+      y1: 50,
+      line: {
+        color: 'rgba(0,0,0,0.1)',
+        width: 1,
+        dash: 'dash'
+      }
+    }]
+  };
+
+  // Configure plot options
+  const config = {
+    displayModeBar: false,
+    responsive: true,
+  };
+
+  return (
+    <div className="col-md-6">
+      <div className="card shadow-sm mb-4">
+        <div className="card-body">
+          <h6 className="text-muted">Win Rate by Day</h6>
+          <Plot
+            data={data}
+            layout={layout}
+            config={config}
+            style={{ width: '100%', height: '220px' }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Circular Progress Component for win percentage visualization
 const CircularProgress = ({ value }) => {
   // Ensure value is between 0-100
@@ -406,6 +579,12 @@ function Dashboard() {
               </div>
             </div>
           </div>
+        </div>
+        
+        {/* Daily Win Rate Chart Row */}
+        <div className="row">
+          {/* Win Rate by Day Chart */}
+          <DailyWinRateChart entries={entries} />
         </div>
         
         {/* AI Trading Analysis Section */}

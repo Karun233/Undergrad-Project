@@ -659,10 +659,11 @@ function AddEntry() {
     return `${sign}${num.toFixed(2)}`;
   };
 
-  // Format date as '11th April 2025'
+  // Format date as 'Tuesday, 11th April 2025'
   const formatDate = (dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
+    const dayName = date.toLocaleString('default', { weekday: 'long' });
     const day = date.getDate();
     const month = date.toLocaleString('default', { month: 'long' });
     const year = date.getFullYear();
@@ -678,7 +679,7 @@ function AddEntry() {
       }
     };
     
-    return `${day}${getOrdinal(day)} ${month} ${year}`;
+    return `${dayName}, ${day}${getOrdinal(day)} ${month} ${year}`;
   };
 
   // Ensure entries is an array before rendering
@@ -693,8 +694,8 @@ function AddEntry() {
       <div className="row">
         <div className="col-12">
           <div className="card">
-            <div className="card-header">
-              <h2 className="card-title">Journal Entries for Journal {id}</h2>
+            <div className="card-header d-flex justify-content-between align-items-center">
+              <h2 className="card-title mb-0">Journal Entries for Journal {id}</h2>
               <button
                 type="button"
                 className="btn btn-primary"
@@ -705,7 +706,7 @@ function AddEntry() {
             </div>
             <div className="card-body p-0">
               <div className="table-responsive">
-                <table className="table table-hover mb-0 compact-journal-table">
+                <table className="table table-hover mb-0 journal-entries-table">
                   <thead>
                     <tr>
                       <th>Date</th>
@@ -727,7 +728,7 @@ function AddEntry() {
                   <tbody>
                   {entries.length === 0 ? (
                       <tr>
-                        <td colSpan="13" className="text-center">No entries found. Add your first entry!</td>
+                        <td colSpan="14" className="text-center">No entries found. Add your first entry!</td>
                       </tr>
                     ) : (
                       entries.map((entry) => (
