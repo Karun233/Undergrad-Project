@@ -19,6 +19,7 @@ from django.conf import settings
 import statistics
 from collections import Counter
 from datetime import datetime
+from datetime import timedelta
 
 # User creation view
 class CreateUserView(generics.CreateAPIView):
@@ -319,7 +320,6 @@ class EntryImageDeleteView(APIView):
             return Response({"error": "Image not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
 
 
 # profile views
@@ -621,59 +621,142 @@ class TradingFeedbackView(APIView):
         
         # Create prompt for OpenAI
         prompt = f"""
-        As a professional trading coach, analyze this trading data and provide feedback in a CONCISE bullet-point format following this exact structure:
-        
-        Trading Summary:
-        - Total Trades: {summary['total_trades']}
-        - Win Rate: {summary['win_rate']}%
-        - Wins: {summary['win_count']}, Losses: {summary['loss_count']}, Break Even: {summary['break_even_count']}
-        - Net P&L: {summary['net_pnl']}
-        - Trader's Maximum Risk Per Trade: {summary['max_risk']}%
-        - Average Risk Taken: {summary['avg_risk']}%
-        - Times Exceeded Max Risk: {summary['risk_exceeded_count']}
-        - Days with Overtrading (>2 trades): {summary['overtrading_days']}
-        - Followed Strategy: {strategy_followed_count} out of {summary['total_trades']} trades
-        - Most Traded Instruments: {summary['most_common_instruments']}
-        - Common Emotions Before Trading: {summary['most_common_emotions_before']}
-        
-        Your analysis must follow this EXACT format with these headers and bullet points only:
-        
-        POSITIVES:
-        - [List 3-4 bullet points of positive behaviors]
-        
-        AREAS FOR IMPROVEMENT:
-        - [List 3-4 bullet points of specific areas to improve]
-        
-        ACTION STEPS:
-        - [List 3-4 specific, actionable steps to improve trading performance]
-        
-        Keep each bullet point to 1-2 sentences maximum. Do not write paragraphs.
-        For POSITIVES, mention if they've followed their strategy consistently, maintained good risk management, or have a good win rate.
-        For AREAS FOR IMPROVEMENT, highlight issues with risk management, overtrading, or emotional control.
-        For ACTION STEPS, include specific next steps like "Review recent losing trades to identify patterns" or "Practice more on simulator before trading unusual instruments."
-        
-        Focus analysis on:
-        1. Risk management: If they've exceeded their max risk ({summary['max_risk']}%), highlight this as a key issue.
-        2. Strategy adherence: If they often deviate from their strategy, emphasis this.
-        3. Emotional control: If emotions seem to negatively impact performance based on the data.
-        4. Instrument selection: If they're trading unusual instruments ({summary['unusual_instruments']}), suggest more focus on their core instruments.
-        
-        Keep the entire response very concise and direct - no introductions or conclusions needed.        
-        """
-        
+As a professional trading coach, analyze this trading data and provide feedback in a CONCISE bullet-point format following this exact structure:
+
+Trading Summary:
+ - Win rate: {summary['win_rate']}%
+ - Total trades: {summary['total_trades']}
+ - Net P&L: {summary['net_pnl']}
+ - Avg. Risk/Reward: {summary['avg_risk']}
+ - Strategy followed: {strategy_followed_count}/{summary['total_trades']}
+
+Key Strengths:
+ -
+Areas for Improvement:
+ -
+Action Plan:
+ - (max 5 bullets)
+"""
         try:
-            client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
-            response = client.chat.completions.create(
-                model="gpt-4-0125-preview",
+            feedback = _call_openai_chat(
                 messages=[{"role": "user", "content": prompt}],
+                model="gpt-4o-mini" if hasattr(__import__('openai'), 'OpenAI') else "gpt-4-0125-preview",
                 max_tokens=1000,
                 temperature=0.7,
             )
-            
-            feedback = response.choices[0].message.content.strip()
             return feedback
-            
         except Exception as e:
             print(f"OpenAI API error: {str(e)}")
             # Fallback response if API fails
-            return f"We couldn't generate AI feedback at this time. Here's a summary of your trading: Win rate: {summary['win_rate']}%, Total trades: {summary['total_trades']}, Net P&L: {summary['net_pnl']}. Please try again later."
+            return (
+                f"We couldn't generate AI feedback at this time. Here's a summary of your trading: "
+                f"Win rate: {summary['win_rate']}%, Total trades: {summary['total_trades']}, Net P&L: {summary['net_pnl']}. "
+                "Please try again later."
+            )
+
+def _call_openai_chat(*, messages, model="gpt-3.5-turbo", max_tokens=700, temperature=0.7):
+    """Call the OpenAI chat completion endpoint supporting both old (<1.0) and new (>=1.0) SDK versions."""
+    import openai  # local import to avoid dependency issues at module load
+    try:
+        # If the new client style exists (openai.OpenAI), use it
+        if hasattr(openai, "OpenAI"):
+            client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+            response = client.chat.completions.create(
+                model=model,
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
+            return response.choices[0].message.content.strip()
+        # Fallback to legacy style
+        openai.api_key = settings.OPENAI_API_KEY  # noqa
+        response = openai.ChatCompletion.create(
+            model=model,
+            messages=messages,
+            max_tokens=max_tokens,
+            temperature=temperature,
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as exc:
+        # Reraise so calling code can catch and handle/log gracefully
+        raise exc
+
+class WeeklyReportView(APIView):
+    """Generate a condensed weekly trading report with AI performance review"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, journal_id):
+        try:
+            journal = Journal.objects.get(id=journal_id, owner=request.user)
+        except Journal.DoesNotExist:
+            return Response({"error": "Journal not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Determine the week to analyse – default to current calendar week starting Monday.
+        start_param = request.query_params.get("start")  # ISO date e.g. 2025-04-14
+        try:
+            if start_param:
+                start_of_week = datetime.fromisoformat(start_param).replace(hour=0, minute=0, second=0, microsecond=0)
+            else:
+                today = datetime.utcnow()
+                # Monday is weekday 0 in Python – adjust to get previous Monday (or today if Monday)
+                start_of_week = today - timedelta(days=today.weekday())
+                start_of_week = start_of_week.replace(hour=0, minute=0, second=0, microsecond=0)
+        except Exception:
+            return Response({"error": "Invalid start date"}, status=status.HTTP_400_BAD_REQUEST)
+
+        end_of_week = start_of_week + timedelta(days=7)
+
+        # Fetch entries within this week
+        entries = JournalEntry.objects.filter(
+            journal=journal,
+            date__gte=start_of_week,
+            date__lt=end_of_week
+        ).order_by('date')
+
+        if entries.count() == 0:
+            return Response({"message": "No trades found for the selected week."}, status=status.HTTP_200_OK)
+
+        # Re‑use helper from TradingFeedbackView for stats
+        trading_helper = TradingFeedbackView()
+        trades_data = trading_helper._prepare_trades_data(entries, journal)
+        feedback = self._generate_weekly_ai_feedback(trades_data)
+
+        return Response({
+            "start_date": start_of_week.date().isoformat(),
+            "end_date": (end_of_week - timedelta(days=1)).date().isoformat(),
+            "summary": trades_data["summary"],
+            "ai_feedback": feedback,
+            "trades_analyzed": entries.count()
+        })
+
+    def _generate_weekly_ai_feedback(self, trades_data):
+        """Call OpenAI to create a concise weekly performance review"""
+        summary = trades_data["summary"]
+        prompt = f"""
+You are a seasoned trading performance coach. Provide a concise ONE‑PAGE weekly report covering the following sections. Use bullet points where appropriate and keep the overall length short (≈450 words max).
+
+1. Weekly Statistics (already calculated – just restate):
+   • Win rate: {summary['win_rate']}%
+   • Total trades: {summary['total_trades']}
+   • Net P&L: {summary['net_pnl']}
+   • Avg. risk‑to‑reward: {summary['avg_risk']}
+
+2. Performance Assessment:
+   • Risk Management – Did the trader respect the max risk of {summary['max_risk']}%? Indicate any risk breaches ({summary['risk_exceeded_count']} times).
+   • Emotional Control – Based on the most common emotions before/during trades {summary['most_common_emotions_before']} / {summary['most_common_emotions_during']}.
+   • Trade Plan Adherence – Use strategy_followed_count if present (assume 100% if missing).
+
+3. Actionable Suggestions: Give 3 specific focus points for the upcoming week.
+
+Return the report in plain text Markdown without extra commentary."""
+        try:
+            report = _call_openai_chat(
+                messages=[{"role": "user", "content": prompt}],
+                model="gpt-3.5-turbo",
+                max_tokens=700,
+                temperature=0.7,
+            )
+            return report
+        except Exception as e:
+            print(f"OpenAI weekly report error: {e}")
+            return "AI feedback unavailable at this time."

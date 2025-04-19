@@ -438,8 +438,8 @@ const CircularProgress = ({ value }) => {
   let color;
   if (percentage >= 65) color = "#4CAF50"; // Green for excellent (65%+)
   else if (percentage >= 50) color = "#8BC34A"; // Light green for good (50-65%)
-  else if (percentage >= 40) color = "#FFC107"; // Yellow for acceptable (40-50%)
-  else color = "#F44336"; // Red for poor (<40%)
+  else if (percentage >= 30) color = "#FFC107"; // Yellow for acceptable (30-50%)
+  else color = "#F44336"; // Red for poor (<30%)
 
   return (
     <div className="position-relative d-flex justify-content-center align-items-center" style={{ height: '160px' }}>
@@ -511,6 +511,12 @@ function Dashboard() {
     averageLoss: 0
   });
 
+  // Weekly report state
+  const [weeklyReport, setWeeklyReport] = useState(null);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportError, setReportError] = useState(null);
+  const [showWeeklyModal, setShowWeeklyModal] = useState(false);
+
   // Sort entries by date (newest to oldest)
   const sortedEntries = entries.slice().sort((a, b) => {
     return new Date(b.date) - new Date(a.date);
@@ -571,6 +577,29 @@ function Dashboard() {
     }
   };
   
+  // Fetch weekly trading report
+  const fetchWeeklyReport = async () => {
+    setReportLoading(true);
+    setReportError(null);
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/journal/${id}/weekly-report/`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem(ACCESS_TOKEN)}`
+          }
+        }
+      );
+      setWeeklyReport(response.data);
+      setShowWeeklyModal(true);
+    } catch (error) {
+      console.error("Error fetching weekly report:", error);
+      setReportError("Unable to generate weekly report. Please try again later.");
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
   // Calculate metrics from entries
   const calculateMetrics = (entries) => {
     // Count wins, losses, etc.
@@ -665,7 +694,16 @@ function Dashboard() {
     <div>
       <Navbar />
       <div className="container mt-4">
-        <h2>Dashboard for Journal {id}</h2>
+        <div className="d-flex justify-content-between align-items-center">
+          <h2>Dashboard for Journal {id}</h2>
+          <button
+            className="btn btn-outline-secondary"
+            onClick={fetchWeeklyReport}
+            disabled={reportLoading}
+          >
+            {reportLoading ? 'Generating...' : 'Weekly Report'}
+          </button>
+        </div>
         
         <div className="row mt-4">
           {/* Win Rate Card with Circular Progress */}
@@ -874,6 +912,53 @@ function Dashboard() {
           initialBalance={10000} 
           numSimulations={1000} 
         />
+        
+        {/* Weekly Report Modal */}
+        {showWeeklyModal && (
+          <div
+            className="modal fade show d-block"
+            tabIndex="-1"
+            style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+          >
+            <div className="modal-dialog modal-lg modal-dialog-scrollable">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">
+                    Weekly Report {weeklyReport?.start_date} - {weeklyReport?.end_date}
+                  </h5>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={() => setShowWeeklyModal(false)}
+                  ></button>
+                </div>
+                <div className="modal-body">
+                  {reportLoading && (
+                    <div className="text-center p-3">
+                      <div className="spinner-border text-primary" role="status">
+                        <span className="visually-hidden">Loading...</span>
+                      </div>
+                    </div>
+                  )}
+                  {reportError && <div className="alert alert-danger">{reportError}</div>}
+                  {!reportLoading && !reportError && weeklyReport && (
+                    <div style={{ whiteSpace: 'pre-wrap' }}>
+                      {weeklyReport.ai_feedback}
+                    </div>
+                  )}
+                </div>
+                <div className="modal-footer">
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => setShowWeeklyModal(false)}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

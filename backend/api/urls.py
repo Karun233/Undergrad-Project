@@ -30,6 +30,8 @@ urlpatterns = [
 
     # AI trading feedback
     path('journal/<int:journal_id>/generate-feedback/', views.TradingFeedbackView.as_view(), name='generate-trading-feedback'),
+    # Weekly report
+    path('journal/<int:journal_id>/weekly-report/', views.WeeklyReportView.as_view(), name='weekly-report'),
     
 ]
 
