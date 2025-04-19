@@ -266,6 +266,164 @@ const DailyWinRateChart = ({ entries }) => {
   );
 };
 
+// Buy vs Sell Comparison Chart Component
+const BuyVsSellComparisonChart = ({ entries }) => {
+  // Skip if no entries
+  if (!entries || entries.length === 0) {
+    return (
+      <div className="col-md-6">
+        <div className="card shadow-sm mb-4">
+          <div className="card-body">
+            <h6 className="text-muted">Buy vs Sell Comparison</h6>
+            <p className="text-center">Not enough data</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Count buy and sell trades
+  const buyTrades = entries.filter(entry => entry.direction === "Buy" || entry.direction === "Long");
+  const sellTrades = entries.filter(entry => entry.direction === "Sell" || entry.direction === "Short");
+  
+  // Count winning buy and sell trades
+  const winningBuyTrades = buyTrades.filter(entry => entry.outcome === "Win");
+  const winningSellTrades = sellTrades.filter(entry => entry.outcome === "Win");
+  
+  // Calculate win rates
+  const buyWinRate = buyTrades.length > 0 ? (winningBuyTrades.length / buyTrades.length) * 100 : 0;
+  const sellWinRate = sellTrades.length > 0 ? (winningSellTrades.length / sellTrades.length) * 100 : 0;
+  
+  // Prepare data for the chart
+  const data = [
+    {
+      x: ['Buy', 'Sell'],
+      y: [buyTrades.length, sellTrades.length],
+      type: 'bar',
+      name: 'Total Trades',
+      marker: {
+        color: ['rgba(54, 162, 235, 0.7)', 'rgba(255, 99, 132, 0.7)'],
+        line: {
+          color: ['rgba(54, 162, 235, 1)', 'rgba(255, 99, 132, 1)'],
+          width: 1
+        }
+      }
+    },
+    {
+      x: ['Buy', 'Sell'],
+      y: [winningBuyTrades.length, winningSellTrades.length],
+      type: 'bar',
+      name: 'Winning Trades',
+      marker: {
+        color: ['rgba(75, 192, 192, 0.7)', 'rgba(153, 102, 255, 0.7)'],
+        line: {
+          color: ['rgba(75, 192, 192, 1)', 'rgba(153, 102, 255, 1)'],
+          width: 1
+        }
+      }
+    }
+  ];
+
+  // Configure the layout
+  const layout = {
+    autosize: true,
+    height: 300,
+    barmode: 'group',
+    title: {
+      text: 'Buy vs Sell Comparison',
+      font: {
+        family: 'Arial, sans-serif',
+        size: 16
+      }
+    },
+    xaxis: {
+      title: 'Direction',
+      titlefont: {
+        family: 'Arial, sans-serif',
+        size: 12
+      }
+    },
+    yaxis: {
+      title: 'Number of Trades',
+      titlefont: {
+        family: 'Arial, sans-serif',
+        size: 12
+      }
+    },
+    legend: {
+      x: 0,
+      y: 1.1,
+      orientation: 'h'
+    },
+    annotations: [
+      {
+        x: 'Buy',
+        y: buyTrades.length,
+        text: buyWinRate.toFixed(1) + '%',
+        showarrow: false,
+        font: {
+          family: 'Arial',
+          size: 12,
+          color: 'black'
+        },
+        yshift: 20
+      },
+      {
+        x: 'Sell',
+        y: sellTrades.length,
+        text: sellWinRate.toFixed(1) + '%',
+        showarrow: false,
+        font: {
+          family: 'Arial',
+          size: 12,
+          color: 'black'
+        },
+        yshift: 20
+      }
+    ],
+    margin: {
+      l: 50,
+      r: 50,
+      b: 50,
+      t: 50,
+      pad: 4
+    }
+  };
+
+  // Configure plot options
+  const config = {
+    displayModeBar: false,
+    responsive: true
+  };
+
+  return (
+    <div className="col-md-6">
+      <div className="card shadow-sm mb-4">
+        <div className="card-body">
+          <Plot
+            data={data}
+            layout={layout}
+            config={config}
+            style={{ width: '100%', height: '100%' }}
+          />
+          <div className="d-flex justify-content-around mt-3 text-center">
+            <div>
+              <h6 className="text-primary">Buy Win Rate</h6>
+              <h4>{buyWinRate.toFixed(1)}%</h4>
+              <small className="text-muted">{winningBuyTrades.length} of {buyTrades.length} trades</small>
+            </div>
+            <div>
+              <h6 className="text-danger">Sell Win Rate</h6>
+              <h4>{sellWinRate.toFixed(1)}%</h4>
+              <small className="text-muted">{winningSellTrades.length} of {sellTrades.length} trades</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Circular Progress Component for win percentage visualization
 const CircularProgress = ({ value }) => {
   // Ensure value is between 0-100
@@ -585,6 +743,8 @@ function Dashboard() {
         <div className="row">
           {/* Win Rate by Day Chart */}
           <DailyWinRateChart entries={entries} />
+          {/* Buy vs Sell Comparison Chart */}
+          <BuyVsSellComparisonChart entries={entries} />
         </div>
         
         {/* AI Trading Analysis Section */}

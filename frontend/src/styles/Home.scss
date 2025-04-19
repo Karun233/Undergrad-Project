@@ -1,0 +1,127 @@
+// Simple SCSS styles for the Home page
+
+.journal-page {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  h2 {
+    margin-bottom: 1.5rem;
+    color: #333;
+  }
+}
+
+.journal-container {
+  background-color: #fff;
+  padding: 1.5rem;
+}
+
+.journals-list {
+  margin: 1.5rem 0;
+}
+
+.journal-item {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  background-color: #fff;
+
+  .journal-details {
+    padding: 1rem;
+
+    h3 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1.2rem;
+      color: #333;
+    }
+
+    p {
+      margin: 0 0 0.75rem 0;
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .journal-meta {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      font-size: 0.8rem;
+      color: #666;
+
+      .journal-date, .journal-risk {
+        margin: 0;
+      }
+    }
+
+    .journal-actions {
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid #f0f0f0;
+      padding-top: 1rem;
+
+      .open-journal-btn {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        cursor: pointer;
+
+        &:hover {
+          background-color: #0069d9;
+        }
+      }
+
+      .delete-btn {
+        background-color: transparent;
+        color: #dc3545;
+        border: 1px solid #dc3545;
+        border-radius: 4px;
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s;
+
+        &:hover {
+          background-color: #dc3545;
+          color: white;
+        }
+      }
+    }
+  }
+}
+
+.create-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.6rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 1rem;
+
+  &:hover {
+    background-color: #0069d9;
+  }
+}
+
+.no-journals {
+  text-align: center;
+  color: #666;
+  padding: 2rem;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  border: 1px dashed #ddd;
+}
+
+// Modal styles are handled inline in the component
+
+@media (max-width: 768px) {
+  .journal-page {
+    padding: 1rem;
+  }
+}

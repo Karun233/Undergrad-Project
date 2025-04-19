@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import api from "../api";
-import Journal from "../components/Journal";
-import "../styles/Home.css";
+import "../styles/Home.scss";
 
 function Home() {
   const [journals, setJournals] = useState([]);
@@ -9,6 +9,7 @@ function Home() {
   const [title, setTitle] = useState("");
   const [maxRisk, setMaxRisk] = useState(1.0);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     getJournals();
@@ -26,14 +27,17 @@ function Home() {
   };
 
   const deleteJournal = (id) => {
+    setIsDeleting(true);
     api
       .delete(`/api/journal/delete/${id}/`)
       .then((res) => {
-        if (res.status === 204) alert("Journal was deleted!");
-        else alert("Failed to delete Journal.");
+        if (res.status === 204) {
+          console.log("Journal was deleted successfully");
+        } else console.error("Failed to delete Journal.");
         getJournals();
       })
-      .catch((error) => alert(error));
+      .catch((error) => console.error(error))
+      .finally(() => setIsDeleting(false));
   };
 
   const createJournal = (e) => {
@@ -45,12 +49,12 @@ function Home() {
         max_risk: parseFloat(maxRisk)
       })
       .then((res) => {
-        if (res.status === 201) alert("Journal was created.");
-        else alert("Failed to create Journal");
+        if (res.status === 201) console.log("Journal was created.");
+        else console.error("Failed to create Journal");
         closeModal();
         getJournals();
       })
-      .catch((error) => alert(error));
+      .catch((error) => console.error(error));
   };
 
   const openModal = () => {
@@ -71,27 +75,58 @@ function Home() {
     e.stopPropagation();
   };
 
+  // Format date for display
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'numeric', 
+      day: 'numeric' 
+    });
+  };
+
   return (
     <div className="journal-page">
       <div className="journal-container">
         <h2>My Journals</h2>
         
-        <div className="journals-list">
-          {journals.length === 0 ? (
-            <p className="no-journals">No journals yet. Create your first journal to get started!</p>
-          ) : (
-            journals.map((journal) => (
-              <Journal journal={journal} onDelete={deleteJournal} key={journal.id} />
-            ))
-          )}
-        </div>
+        {journals.length === 0 ? (
+          <p className="no-journals">No journals yet. Create your first journal to get started!</p>
+        ) : (
+          <div className="journals-list">
+            {journals.map((journal) => (
+              <div className="journal-item" key={journal.id}>
+                <div className="journal-details">
+                  <h3>{journal.title}</h3>
+                  <p>{journal.description}</p>
+                  <div className="journal-meta">
+                    <p className="journal-date">{formatDate(journal.created_at)}</p>
+                    <p className="journal-risk">Max Risk: {journal.max_risk}%</p>
+                  </div>
+                  <div className="journal-actions">
+                    <Link to={`/journal/${journal.id}/add-entry`}>
+                      <button className="open-journal-btn">Open Journal</button>
+                    </Link>
+                    <button 
+                      className="delete-btn" 
+                      onClick={() => deleteJournal(journal.id)}
+                      disabled={isDeleting}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
         
         <button className="create-button" onClick={openModal}>
           Create New Journal
         </button>
       </div>
 
-      {/* Modal with inline styles to ensure visibility */}
+      {/* Modal */}
       {isModalOpen && (
         <div 
           className="modal-overlay" 
@@ -167,9 +202,6 @@ function Home() {
               <div className="form-group" style={{ marginBottom: '15px' }}>
                 <label htmlFor="maxRisk" style={{ display: 'block', marginBottom: '5px' }}>
                   Maximum Risk Per Trade (%):
-                  <span className="text-muted" style={{ fontSize: '0.85rem', marginLeft: '5px' }}>
-                    (Used for risk management analysis)
-                  </span>
                 </label>
                 <input
                   type="number"
@@ -189,12 +221,12 @@ function Home() {
                     border: '1px solid #ddd'
                   }}
                 />
-                <small className="text-muted" style={{ display: 'block', marginTop: '5px' }}>
+                <small style={{ display: 'block', marginTop: '5px', color: '#666' }}>
                   This is the maximum percentage of your account you're willing to risk on a single trade.
                 </small>
               </div>
               
-              <div className="form-buttons" style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <button 
                   type="button"
                   onClick={closeModal}
@@ -213,7 +245,7 @@ function Home() {
                   type="submit"
                   style={{
                     padding: '8px 16px',
-                    backgroundColor: '#28a745',
+                    backgroundColor: '#007bff',
                     color: 'white',
                     border: 'none',
                     borderRadius: '4px',
