@@ -57,6 +57,7 @@ class StringListField(serializers.Field):
 class JournalEntrySerializer(serializers.ModelSerializer):
     entry_images = EntryImageSerializer(many=True, read_only=True)
     images = StringListField(required=False)
+    feeling_during = StringListField(required=False)
     
     class Meta:
         model = JournalEntry
@@ -70,8 +71,12 @@ class JournalEntrySerializer(serializers.ModelSerializer):
             'risk_management',
             'follow_strategy',
             'feeling_before',
+            'confidence_before',
+            'feeling_during',
+            'confidence_during',
             'feeling_during_text',
             'review',
+            'review_rating',
             'risk_percent',
             'additional_comments',
             'created_at',
@@ -86,6 +91,9 @@ class JournalEntrySerializer(serializers.ModelSerializer):
             'risk_reward_ratio': {'required': False},
             'profit_loss': {'required': False},
             'risk_percent': {'required': False},
+            'confidence_before': {'required': False},
+            'confidence_during': {'required': False},
+            'review_rating': {'required': False},
         }
 
 

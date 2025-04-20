@@ -9,6 +9,315 @@ import Navbar from '../components/Navbar';
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
+// Add custom CSS for the table with Notion-like styling
+const tableStyles = `
+  /* Overall table styling with Notion-like appearance */
+  .journal-entries-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    min-width: 1400px; /* Ensure table has minimum width for horizontal scroll */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  
+  /* Header styling */
+  .journal-entries-table thead th {
+    position: sticky;
+    top: 0;
+    background: #f8f9fa;
+    z-index: 10;
+    font-weight: 600;
+    padding: 12px 10px;
+    border-bottom: 2px solid #dee2e6;
+  }
+  
+  /* Fixed height cells with scrollable content */
+  .journal-entries-table td {
+    padding: 12px 8px;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+    color: #37352f;
+    max-height: 95px;
+    height: 95px;
+  }
+  
+  /* Zebra striping for rows */
+  .journal-entries-table tbody tr:nth-child(odd) {
+    background-color: #fafafa;
+  }
+  
+  /* Hover effect */
+  .journal-entries-table tbody tr:hover {
+    background-color: #f8f9fa;
+  }
+  
+  /* Style for text content cells */
+  .text-cell {
+    max-height: 85px;
+    overflow-y: auto;
+    word-break: break-word;
+    padding: 8px;
+    border-radius: 3px;
+    background-color: #f7f7f7;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+    line-height: 1.5;
+  }
+  
+  /* Scrollbar styling for better visibility */
+  .text-cell::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  .text-cell::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+  
+  .text-cell::-webkit-scrollbar-thumb {
+    background: #d1d1d1;
+    border-radius: 3px;
+  }
+  
+  .text-cell::-webkit-scrollbar-thumb:hover {
+    background: #aaa;
+  }
+  
+  /* Ensure narrow columns for confidence and rating numbers */
+  .number-column {
+    text-align: center;
+    vertical-align: middle;
+    padding: 12px 8px;
+  }
+  
+  /* Rating visualization */
+  .rating-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .rating-number {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    line-height: 32px;
+    text-align: center;
+    border-radius: 50%;
+    background-color: #0070f3;
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  /* Make sure table container is properly scrollable */
+  .journal-entries-table-container {
+    width: 100%;
+    overflow-x: auto;
+    position: relative;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  
+  /* Specific styling for various data types */
+  .outcome-win {
+    color: #0ca678;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 3px;
+    background-color: rgba(12, 166, 120, 0.08);
+  }
+  
+  .outcome-loss {
+    color: #fa5252;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 3px;
+    background-color: rgba(250, 82, 82, 0.08);
+  }
+  
+  .outcome-breakeven {
+    color: #868e96;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 3px;
+    background-color: rgba(134, 142, 150, 0.08);
+  }
+  
+  /* Card style button group */
+  .action-buttons {
+    display: flex;
+    gap: 5px;
+  }
+  
+  .action-button {
+    padding: 5px 8px;
+    border: none;
+    border-radius: 3px;
+    background-color: #f8f9fa;
+    color: #495057;
+    font-weight: 500;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  }
+  
+  .action-button:hover {
+    background-color: #e9ecef;
+  }
+  
+  .action-button.edit {
+    color: #1971c2;
+  }
+  
+  .action-button.delete {
+    color: #e03131;
+  }
+  
+  .action-button.view {
+    color: #5f3dc4;
+  }
+  
+  /* Entry detail modal */
+  .entry-detail-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 1100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .entry-detail-content {
+    background: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 900px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 20px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+  }
+  
+  .entry-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+  }
+  
+  .entry-detail-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #6c757d;
+  }
+  
+  .entry-detail-close:hover {
+    color: #343a40;
+  }
+  
+  .entry-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+  }
+  
+  .entry-detail-item {
+    border: 1px solid #eaeaea;
+    border-radius: 4px;
+    padding: 12px;
+    background-color: #f8f9fa;
+  }
+  
+  .entry-detail-label {
+    font-weight: 500;
+    margin-bottom: 5px;
+    color: #6c757d;
+    font-size: 0.9rem;
+  }
+  
+  .entry-detail-value {
+    color: #212529;
+    min-height: 24px;
+  }
+  
+  .entry-detail-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 15px;
+  }
+  
+  .entry-detail-image {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  /* Enhanced styling for ratings and number columns */
+  .rating-number {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    line-height: 32px;
+    text-align: center;
+    border-radius: 50%;
+    background-color: #0070f3;
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  .feeling-cell {
+    font-weight: 500;
+    color: #333;
+    min-width: 110px;
+    white-space: nowrap;
+    padding: 8px;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+  }
+  
+  .number-column {
+    text-align: center;
+    width: 60px;
+    min-width: 60px;
+    padding: 8px;
+  }
+  
+  /* Table improvements */
+  .journal-entries-table th {
+    position: sticky;
+    top: 0;
+    background: #f8f9fa;
+    z-index: 10;
+    font-weight: 600;
+    padding: 12px 10px;
+    border-bottom: 2px solid #dee2e6;
+  }
+  
+  .journal-entries-table td {
+    padding: 12px 8px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .journal-entries-table tr:hover {
+    background-color: #f8f9fa;
+  }
+`;
+
 // Function to refresh the token
 const refreshAuthToken = async () => {
   try {
@@ -330,13 +639,14 @@ function AddEntry() {
   const [showModal, setShowModal] = useState(false); // State for modal visibility
   const [editMode, setEditMode] = useState(false); // State to track if we're editing or creating
   const [currentEntryId, setCurrentEntryId] = useState(null); // Track the entry being edited
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false); // State for delete confirmation modal
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false); // State for delete confirmation modal
   const [entryToDelete, setEntryToDelete] = useState(null); // Track the entry to delete
   const [selectedImages, setSelectedImages] = useState([]); // State for selected images
   const [isSubmitting, setIsSubmitting] = useState(false); // Track form submission state
   const [showImageModal, setShowImageModal] = useState(false); // State for image modal visibility
   const [selectedImageUrl, setSelectedImageUrl] = useState(null); // Track the selected image URL
-  
+  const [detailEntry, setDetailEntry] = useState(null); // Track the entry being viewed in detail
+
   const [formData, setFormData] = useState({
     date: '',
     instrument: '',
@@ -348,25 +658,29 @@ function AddEntry() {
     risk_reward_ratio: '',  // New field
     profit_loss: '',        // New field
     risk_percent: '',       // New field
+    follow_strategy: true,  // Default to true for following strategy
+    feeling_before: 'Neutral', // Default feeling before
+    confidence_before: 5,   // Default confidence before (1-10)
+    feeling_during: 'Neutral', // Default feeling during
+    confidence_during: 5,   // Default confidence during (1-10)
+    review_rating: 5,       // Default review rating (1-10)
   });
 
   const [feelingBefore, setFeelingBefore] = useState('');
   const [feelingDuring, setFeelingDuring] = useState('');
   const [review, setReview] = useState('');
 
-  // Function to handle image click for modal display
-  const handleImageClick = (imageUrl, e) => {
-    e.preventDefault(); // Prevent the default behavior of opening a new tab
-    e.stopPropagation(); // Prevent event bubbling
-    setSelectedImageUrl(imageUrl);
-    setShowImageModal(true);
-  };
-
-  // Function to close the image modal
-  const handleCloseImageModal = () => {
-    setShowImageModal(false);
-    setSelectedImageUrl(null);
-  };
+  // Load saved column widths from localStorage on mount
+  useEffect(() => {
+    const savedWidths = localStorage.getItem('journalTableColumnWidths');
+    if (savedWidths) {
+      try {
+        // setColumnWidths(JSON.parse(savedWidths));
+      } catch (e) {
+        console.error('Error loading saved column widths:', e);
+      }
+    }
+  }, []);
 
   // Debug token validity on component mount
   useEffect(() => {
@@ -407,6 +721,17 @@ function AddEntry() {
           ? [...response.data].sort((a, b) => new Date(a.date) - new Date(b.date))
           : [];
           
+        // Log each entry to inspect what data is coming from API
+        sortedEntries.forEach(entry => {
+          console.log(`Entry ${entry.id} data:`, {
+            feeling_before: entry.feeling_before,
+            confidence_before: entry.confidence_before,
+            feeling_during: entry.feeling_during,
+            confidence_during: entry.confidence_during,
+            review_rating: entry.review_rating
+          });
+        });
+        
         setEntries(sortedEntries);
       } catch (error) {
         console.error('Error fetching entries:', error);
@@ -458,21 +783,57 @@ function AddEntry() {
 
   // Initialize edit mode with the current entry data
   const handleEdit = (entry) => {
+    console.log("Editing entry with data:", entry); // Debug log
+    
+    // Handle feeling_during which might be coming as an array
+    let feelingDuringValue = 'Neutral';
+    if (typeof entry.feeling_during === 'string') {
+      feelingDuringValue = entry.feeling_during;
+    } else if (Array.isArray(entry.feeling_during) && entry.feeling_during.length > 0) {
+      feelingDuringValue = entry.feeling_during[0];
+    }
+    
+    console.log("Processing feeling_during:", {
+      original: entry.feeling_during,
+      processed: feelingDuringValue
+    });
+    
+    // Ensure all numeric values have proper defaults if they're missing
     setFormData({
       date: entry.date,
       instrument: entry.instrument,
       direction: entry.direction,
       outcome: entry.outcome,
-      risk_management: entry.risk_management,
-      feeling_during: entry.feeling_during || [],
+      risk_management: entry.risk_management || '',
+      feeling_during: feelingDuringValue,
       additional_comments: entry.additional_comments || '',
       risk_reward_ratio: entry.risk_reward_ratio || '',
       profit_loss: entry.profit_loss || '',
       risk_percent: entry.risk_percent || '',
+      follow_strategy: entry.follow_strategy,
+      feeling_before: entry.feeling_before || 'Neutral',
+      confidence_before: entry.confidence_before !== undefined && entry.confidence_before !== null 
+                        ? Number(entry.confidence_before) : 5,
+      confidence_during: entry.confidence_during !== undefined && entry.confidence_during !== null 
+                        ? Number(entry.confidence_during) : 5,
+      review_rating: entry.review_rating !== undefined && entry.review_rating !== null 
+                    ? Number(entry.review_rating) : 5,
+    });
+    
+    console.log("Setting form data with confidence values:", {
+      confidence_before: entry.confidence_before !== undefined && entry.confidence_before !== null 
+                        ? Number(entry.confidence_before) : 5,
+      confidence_during: entry.confidence_during !== undefined && entry.confidence_during !== null 
+                        ? Number(entry.confidence_during) : 5,
+      review_rating: entry.review_rating !== undefined && entry.review_rating !== null 
+                    ? Number(entry.review_rating) : 5
     });
     
     // Set selected images to the existing images from the entry
     setSelectedImages(entry.images || []);
+    setFeelingBefore(entry.feeling_before_text || '');
+    setFeelingDuring(entry.feeling_during_text || '');
+    setReview(entry.review || '');
     setCurrentEntryId(entry.id);
     setEditMode(true);
     setShowModal(true);
@@ -481,145 +842,220 @@ function AddEntry() {
   // Handle delete confirmation
   const handleDeleteClick = (entry) => {
     setEntryToDelete(entry);
-    setShowDeleteConfirm(true);
+    setShowDeleteConfirmation(true);
   };
 
   // Execute delete after confirmation
-  const confirmDelete = async () => {
+  const handleDeleteConfirm = async () => {
     if (!entryToDelete) return;
     
     try {
       await axios.delete(`${API_BASE_URL}/journal/${id}/entries/${entryToDelete.id}/delete/`);
+      
       // Remove the deleted entry from the local state
       setEntries(entries.filter(entry => entry.id !== entryToDelete.id));
-      setShowDeleteConfirm(false);
+      
+      // Close the confirmation modal
+      setShowDeleteConfirmation(false);
       setEntryToDelete(null);
+      
+      // Show success message
       alert('Entry deleted successfully!');
     } catch (error) {
       console.error('Error deleting entry:', error);
-      alert(`Error: ${error.response?.data?.detail || 'Failed to delete entry'}`);
+      alert(`Error: ${error.response?.data?.detail || 'Could not delete entry. Please try again.'}`);
     }
+  };
+
+  // Cancel delete operation
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirmation(false);
+    setEntryToDelete(null);
   };
 
   // Reset form and modal state
   const resetForm = () => {
     setFormData({
-      date: new Date().toISOString().slice(0, 10), // Current date in YYYY-MM-DD format
+      date: new Date().toISOString().split('T')[0],
       instrument: '',
       direction: 'Buy',
       outcome: 'Win',
       risk_management: '',
-      follow_strategy: true, // Default to true for following strategy
-      feeling_before: '',
-      feeling_during_text: '',
-      review: '',
-      risk_percent: '',
+      feeling_during: [],
+      additional_comments: '',
       risk_reward_ratio: '',
       profit_loss: '',
-      additional_comments: '',
+      risk_percent: '',
+      follow_strategy: true,
+      feeling_before: 'Neutral',
+      confidence_before: 5,
+      feeling_during: 'Neutral',
+      confidence_during: 5,
+      review_rating: 5,
     });
     setSelectedImages([]);
     setFeelingBefore('');
     setFeelingDuring('');
     setReview('');
-    setEditMode(false);
     setCurrentEntryId(null);
+    setEditMode(false);
     setShowModal(false);
-    setIsSubmitting(false);
   };
 
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isSubmitting) return; // Prevent double submission
-    
-    setIsSubmitting(true);
     
     try {
-      // Create FormData object to handle file uploads
-      const formDataToSend = new FormData();
-      
-      // Append text data
-      Object.keys(formData).forEach(key => {
-        if (key === 'feeling_during') {
-          // Handle array data by converting to JSON string
-          formDataToSend.append(key, JSON.stringify(formData[key]));
-        } else if (formData[key] !== null && formData[key] !== undefined) {
-          formDataToSend.append(key, formData[key]);
-        }
-      });
-      
-      // Append new fields
-      formDataToSend.append('feeling_before', feelingBefore);
-      formDataToSend.append('feeling_during_text', feelingDuring);
-      formDataToSend.append('review', review);
-      
-      // Append image files if there are any new image files (not URLs)
-      const newImageFiles = selectedImages.filter(image => typeof image !== 'string');
-      console.log(`Adding ${newImageFiles.length} new image files`);
-      
-      newImageFiles.forEach((image, index) => {
-        if (image && image instanceof File && image.type.startsWith('image/')) {
-          formDataToSend.append('images', image);
-          console.log(`Appended image ${index}: ${image.name}, type: ${image.type}, size: ${image.size} bytes`);
-        } else {
-          console.warn(`Skipped invalid image at index ${index}:`, image);
-        }
-      });
-      
-      // Append existing image URLs
-      const existingImageUrls = selectedImages.filter(image => typeof image === 'string');
-      console.log(`Adding ${existingImageUrls.length} existing image URLs`);
-      if (existingImageUrls.length > 0) {
-        formDataToSend.append('existing_images', JSON.stringify(existingImageUrls));
+      // Pre-submission validation
+      if (formData.risk_percent && isNaN(parseFloat(formData.risk_percent))) {
+        alert('Risk percentage must be a valid number');
+        return;
       }
-      
-      // Debug output FormData contents
-      console.log('FormData contents:');
-      for (let pair of formDataToSend.entries()) {
-        console.log(`${pair[0]}: ${typeof pair[1] === 'object' ? 'File object' : pair[1]}`);
-      }
-      
-      let response;
-      
-      if (editMode && currentEntryId) {
-        // Update existing entry
-        console.log(`Updating entry ${currentEntryId} for journal ${id}`);
-        response = await axios.put(
-          `${API_BASE_URL}/journal/${id}/entries/${currentEntryId}/update/`,
-          formDataToSend,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-          }
-        );
-        console.log('Update response:', response.data);
-        alert('Entry updated successfully!');
-      } else {
-        // Create new entry
-        console.log(`Creating new entry for journal ${id}`);
-        response = await axios.post(
-          `${API_BASE_URL}/journal/${id}/entries/create/`,
-          formDataToSend,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-          }
-        );
-        console.log('Create response:', response.data);
-        alert('Entry added successfully!');
-      }
-      
-      resetForm();
 
-      // Refresh the entries list after submission
-      const entriesResponse = await axios.get(`${API_BASE_URL}/journal/${id}/entries/`);
-      setEntries(entriesResponse.data);
-    } catch (error) {
-      console.error('Error with entry:', error);
+      // Force all rating values to be proper numbers
+      const confidenceBefore = Number(formData.confidence_before || 5);
+      const confidenceDuring = Number(formData.confidence_during || 5);
+      const reviewRating = Number(formData.review_rating || 5);
       
+      // Ensure feelings are properly set as strings, not arrays
+      const feelingBefore = formData.feeling_before || 'Neutral';
+      const feelingDuring = formData.feeling_during || 'Neutral';
+      
+      console.log('Form values being submitted:', {
+        confidenceBefore,
+        confidenceDuring,
+        reviewRating,
+        feelingBefore,
+        feelingDuring
+      });
+
+      // Prepare data for API - ensure all numeric fields are sent as numbers
+      const apiData = {
+        ...formData,
+        journal: parseInt(id),
+        risk_percent: formData.risk_percent ? parseFloat(formData.risk_percent) : null,
+        risk_reward_ratio: formData.risk_reward_ratio ? parseFloat(formData.risk_reward_ratio) : null,
+        profit_loss: formData.profit_loss ? parseFloat(formData.profit_loss) : null,
+        follow_strategy: formData.follow_strategy === 'true' || formData.follow_strategy === true,
+        review: review,
+        feeling_before: feelingBefore,
+        feeling_during: feelingDuring,
+        feeling_before_text: feelingBefore, 
+        feeling_during_text: feelingDuring, 
+        confidence_before: confidenceBefore,
+        confidence_during: confidenceDuring,
+        review_rating: reviewRating
+      };
+
+      // Log the data we're sending to API for debugging
+      console.log('Submitting data to API:', apiData);
+
+      let response;
+      // If in edit mode, update the existing entry
+      if (editMode) {
+        // For PUT requests, include explicit numeric values in the URL format
+        console.log(`Updating entry with ID: ${currentEntryId}, sending values:`, {
+          confidence_before: confidenceBefore,
+          confidence_during: confidenceDuring,
+          review_rating: reviewRating
+        });
+        
+        // Make sure to stringify the numbers for debugging
+        const endpoint = `${API_BASE_URL}/journal/${id}/entries/${currentEntryId}/update/`;
+        console.log(`Sending PUT request to: ${endpoint}`);
+        
+        response = await axios.put(
+          endpoint, 
+          {
+            ...apiData,
+            confidence_before: confidenceBefore,
+            confidence_during: confidenceDuring,
+            review_rating: reviewRating
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      } else {
+        // Otherwise, create a new entry
+        response = await axios.post(
+          `${API_BASE_URL}/journal/${id}/entries/create/`, 
+          apiData,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      // Handle image uploads if any
+      if (selectedImages.length > 0) {
+        // Only process non-string images (new file uploads)
+        const newImages = selectedImages.filter(img => typeof img !== 'string');
+        if (newImages.length > 0) {
+          const formData = new FormData();
+          newImages.forEach((image, index) => {
+            formData.append(`image${index}`, image);
+          });
+          
+          // Append existing images that are strings (URLs)
+          const existingImages = selectedImages
+            .filter(img => typeof img === 'string')
+            .map(url => url);
+          
+          if (existingImages.length > 0) {
+            formData.append('existing_images', JSON.stringify(existingImages));
+          }
+
+          const entryId = editMode ? currentEntryId : response.data.id;
+          await axios.post(
+            `${API_BASE_URL}/journal/${id}/entries/${entryId}/images/upload/`, 
+            formData, 
+            {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+              },
+            }
+          );
+        }
+      }
+
+      // Refresh entries after form submission
+      const updatedEntries = await axios.get(`${API_BASE_URL}/journal/${id}/entries/`);
+      console.log('Updated entries response:', updatedEntries.data);
+      
+      // Sort the updated entries before setting state
+      const sortedEntries = [...updatedEntries.data].sort(
+        (a, b) => new Date(a.date) - new Date(b.date)
+      );
+      
+      // Debug log entries data after update
+      sortedEntries.forEach(entry => {
+        console.log(`Updated Entry ${entry.id} data:`, {
+          feeling_before: entry.feeling_before,
+          confidence_before: entry.confidence_before,
+          feeling_during: entry.feeling_during,
+          confidence_during: entry.confidence_during,
+          review_rating: entry.review_rating
+        });
+      });
+      
+      setEntries(sortedEntries);
+      
+      // Close the modal and reset form
+      setShowModal(false);
+      resetForm();
+      
+      // Show success message
+      alert(editMode ? 'Entry updated successfully!' : 'Entry added successfully!');
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      
+      // Show detailed error message
       if (error.response) {
         console.error('Error status:', error.response.status);
         console.error('Error data:', error.response.data);
@@ -639,8 +1075,6 @@ function AddEntry() {
         console.error('Error message:', error.message);
         alert(`Error: ${error.message}`);
       }
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -694,6 +1128,30 @@ function AddEntry() {
     return <p>No entries found or invalid data format.</p>;
   }
 
+  // Function to handle image click for modal display
+  const handleImageClick = (imageUrl, e) => {
+    e.preventDefault(); // Prevent the default behavior of opening a new tab
+    e.stopPropagation(); // Prevent event bubbling
+    setSelectedImageUrl(imageUrl);
+    setShowImageModal(true);
+  };
+
+  // Function to close the image modal
+  const handleCloseImageModal = () => {
+    setShowImageModal(false);
+    setSelectedImageUrl(null);
+  };
+
+  // Function to open entry detail modal
+  const handleViewDetail = (entry) => {
+    setDetailEntry(entry);
+  };
+
+  // Function to close entry detail modal
+  const handleCloseDetail = () => {
+    setDetailEntry(null);
+  };
+
   return (
     <div className="container-fluid mt-4">
       <Navbar />
@@ -711,7 +1169,7 @@ function AddEntry() {
               </button>
             </div>
             <div className="card-body p-0">
-              <div className="table-responsive">
+              <div className="table-responsive journal-entries-table-container">
                 <table className="table table-hover mb-0 journal-entries-table">
                   <thead>
                     <tr>
@@ -725,8 +1183,11 @@ function AddEntry() {
                       <th>Risk %</th>
                       <th>Risk Management</th>
                       <th>Feeling Before</th>
+                      <th>Conf.</th>
                       <th>Feeling During</th>
+                      <th>Conf.</th>
                       <th>Review</th>
+                      <th>Rating</th>
                       <th>Images</th>
                       <th>Actions</th>
                     </tr>
@@ -734,7 +1195,7 @@ function AddEntry() {
                   <tbody>
                   {entries.length === 0 ? (
                       <tr>
-                        <td colSpan="14" className="text-center">No entries found. Add your first entry!</td>
+                        <td colSpan="17" className="text-center">No entries found. Add your first entry!</td>
                       </tr>
                     ) : (
                       entries.map((entry) => (
@@ -743,16 +1204,68 @@ function AddEntry() {
                           <td>{entry.follow_strategy === true ? 'Yes' : entry.follow_strategy === false ? 'No' : ''}</td>
                           <td>{entry.instrument}</td>
                           <td>{entry.direction}</td>
-                          <td>{entry.outcome}</td>
-                          <td>{entry.risk_reward_ratio || ''}</td>
+                          <td>
+                            <span className={`outcome-${entry.outcome.toLowerCase()}`}>
+                              {entry.outcome}
+                            </span>
+                          </td>
+                          <td>{entry.risk_reward_ratio || '-'}</td>
                           <td className={entry.profit_loss > 0 ? 'text-success' : entry.profit_loss < 0 ? 'text-danger' : ''}>
                             {formatNumber(entry.profit_loss)}
                           </td>
-                          <td>{entry.risk_percent !== undefined && entry.risk_percent !== null && entry.risk_percent !== '' ? `${parseFloat(entry.risk_percent).toFixed(2)}%` : ''}</td>
-                          <td>{entry.risk_management}</td>
-                          <td>{entry.feeling_before}</td>
-                          <td>{entry.feeling_during_text}</td>
-                          <td>{entry.review}</td>
+                          <td>{entry.risk_percent !== undefined && entry.risk_percent !== null && entry.risk_percent !== '' ? `${parseFloat(entry.risk_percent).toFixed(2)}%` : '-'}</td>
+                          <td>
+                            <div className="text-cell">
+                              {entry.risk_management || '-'}
+                            </div>
+                          </td>
+                          <td className="feeling-cell">
+                            {entry.feeling_before || 'Neutral'}
+                          </td>
+                          <td className="number-column">
+                            <div className="rating-display">
+                              <span className="rating-number">
+                                {entry.confidence_before || '5'}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="feeling-cell">
+                            {(() => {
+                              // Handle various formats of feeling_during
+                              if (typeof entry.feeling_during === 'string') {
+                                return entry.feeling_during;
+                              } 
+                              else if (Array.isArray(entry.feeling_during)) {
+                                if (entry.feeling_during.length > 0) {
+                                  // Get first item if it's an array
+                                  const feeling = entry.feeling_during[0];
+                                  // Remove any quotes if it's a string with quotes
+                                  return typeof feeling === 'string' ? feeling.replace(/['"[\]]/g, '') : feeling;
+                                }
+                              }
+                              // Default fallback
+                              return 'Neutral';
+                            })()}
+                          </td>
+                          <td className="number-column">
+                            <div className="rating-display">
+                              <span className="rating-number">
+                                {entry.confidence_during || '5'}
+                              </span>
+                            </div>
+                          </td>
+                          <td>
+                            <div className="text-cell">
+                              {entry.review || '-'}
+                            </div>
+                          </td>
+                          <td className="number-column">
+                            <div className="rating-display">
+                              <span className="rating-number">
+                                {entry.review_rating || '5'}
+                              </span>
+                            </div>
+                          </td>
                           <td>
                             {entry.images && entry.images.length > 0 && (
                               <div className="d-flex flex-wrap">
@@ -793,18 +1306,24 @@ function AddEntry() {
                             )}
                           </td>
                           <td>
-                            <div className="btn-group" role="group">
+                            <div className="action-buttons">
                               <button
-                                className="btn btn-sm btn-outline-primary"
+                                className="action-button edit"
                                 onClick={() => handleEdit(entry)}
                               >
                                 Edit
                               </button>
                               <button
-                                className="btn btn-sm btn-outline-danger ms-1"
+                                className="action-button delete"
                                 onClick={() => handleDeleteClick(entry)}
                               >
                                 Delete
+                              </button>
+                              <button
+                                className="action-button view"
+                                onClick={() => handleViewDetail(entry)}
+                              >
+                                View
                               </button>
                             </div>
                           </td>
@@ -967,47 +1486,130 @@ function AddEntry() {
                   <div className="mb-3">
                     <label>
                       Feeling Before Trade
-                      <OverlayTrigger placement="right" overlay={<Tooltip>How did you feel before placing the trade? Scared? Hesitant or calm? Please detail.</Tooltip>}>
+                      <OverlayTrigger placement="right" overlay={<Tooltip>How did you feel before placing the trade?</Tooltip>}>
                         <span style={{cursor: 'pointer', marginLeft: 5, color: '#17a2b8'}}><i className="bi bi-info-circle"></i></span>
                       </OverlayTrigger>
                     </label>
-                    <textarea 
-                      className="form-control" 
-                      value={feelingBefore} 
-                      onChange={e => setFeelingBefore(e.target.value)} 
-                      placeholder="Describe your feelings before the trade..." 
-                    />
+                    <div className="row align-items-center">
+                      <div className="col-md-6">
+                        <select 
+                          className="form-select" 
+                          value={formData.feeling_before}
+                          onChange={(e) => setFormData({...formData, feeling_before: e.target.value})}
+                        >
+                          <option value="Hesitant">Hesitant</option>
+                          <option value="Slightly hesitant">Slightly hesitant</option>
+                          <option value="Neutral">Neutral</option>
+                          <option value="Slightly confident">Slightly confident</option>
+                          <option value="Very confident">Very confident</option>
+                        </select>
+                      </div>
+                      <div className="col-md-6">
+                        <div className="d-flex align-items-center">
+                          <label className="me-2 form-label mb-0">Confidence (1-10):</label>
+                          <input 
+                            type="number" 
+                            className="form-control" 
+                            min="1" 
+                            max="10" 
+                            value={formData.confidence_before}
+                            onChange={(e) => {
+                              console.log('Changing confidence before to:', e.target.value);
+                              setFormData({...formData, confidence_before: Number(e.target.value)});
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <textarea 
+                        className="form-control" 
+                        value={feelingBefore} 
+                        onChange={e => setFeelingBefore(e.target.value)} 
+                        placeholder="Additional details about your feelings before the trade..." 
+                      />
+                    </div>
                   </div>
                   
                   {/* Feeling During Trade */}
                   <div className="mb-3">
                     <label>
                       Feeling During Trade
-                      <OverlayTrigger placement="right" overlay={<Tooltip>How did you feel during the trade? Were you monitoring constantly, anxious, or relaxed? Please detail.</Tooltip>}>
+                      <OverlayTrigger placement="right" overlay={<Tooltip>How did you feel during the trade?</Tooltip>}>
                         <span style={{cursor: 'pointer', marginLeft: 5, color: '#17a2b8'}}><i className="bi bi-info-circle"></i></span>
                       </OverlayTrigger>
                     </label>
-                    <textarea 
-                      className="form-control" 
-                      value={feelingDuring} 
-                      onChange={e => setFeelingDuring(e.target.value)} 
-                      placeholder="Describe your feelings during the trade..." 
-                    />
+                    <div className="row align-items-center">
+                      <div className="col-md-6">
+                        <select 
+                          className="form-select" 
+                          value={formData.feeling_during}
+                          onChange={(e) => {
+                            console.log('Setting feeling during to:', e.target.value);
+                            setFormData({...formData, feeling_during: e.target.value});
+                          }}
+                        >
+                          <option value="Very worried">Very worried</option>
+                          <option value="Worried">Worried</option>
+                          <option value="Slightly worried">Slightly worried</option>
+                          <option value="Neutral">Neutral</option>
+                          <option value="Slightly confident">Slightly confident</option>
+                          <option value="Very confident">Very confident</option>
+                        </select>
+                      </div>
+                      <div className="col-md-6">
+                        <div className="d-flex align-items-center">
+                          <label className="me-2 form-label mb-0">Confidence (1-10):</label>
+                          <input 
+                            type="number" 
+                            className="form-control" 
+                            min="1" 
+                            max="10" 
+                            value={formData.confidence_during}
+                            onChange={(e) => {
+                              console.log('Changing confidence during to:', e.target.value);
+                              setFormData({...formData, confidence_during: Number(e.target.value)});
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <textarea 
+                        className="form-control" 
+                        value={feelingDuring} 
+                        onChange={e => setFeelingDuring(e.target.value)} 
+                        placeholder="Additional details about your feelings during the trade..." 
+                      />
+                    </div>
                   </div>
                   
                   {/* Review */}
                   <div className="mb-3">
-                    <label>
-                      Review
-                      <OverlayTrigger placement="right" overlay={<Tooltip>Reflect on your emotions and decision after the trade. Regretful, proud, or something else?</Tooltip>}>
-                        <span style={{cursor: 'pointer', marginLeft: 5, color: '#17a2b8'}}><i className="bi bi-info-circle"></i></span>
-                      </OverlayTrigger>
-                    </label>
+                    <div className="d-flex justify-content-between align-items-center">
+                      <label>Review (rate 1-10)</label>
+                      <div className="d-flex align-items-center">
+                        <label className="me-2 form-label mb-0">Rating:</label>
+                        <input 
+                          type="number" 
+                          className="form-control" 
+                          style={{ width: '70px' }}
+                          min="1" 
+                          max="10" 
+                          value={formData.review_rating}
+                          onChange={(e) => {
+                            console.log('Changing review rating to:', e.target.value);
+                            setFormData({...formData, review_rating: Number(e.target.value)});
+                          }}
+                        />
+                      </div>
+                    </div>
                     <textarea 
-                      className="form-control" 
+                      className="form-control mt-2" 
                       value={review} 
                       onChange={e => setReview(e.target.value)} 
-                      placeholder="Reflect on the trade and your emotions after it..." 
+                      rows="3" 
+                      placeholder="Review of your trade..."
                     />
                   </div>
                   
@@ -1070,16 +1672,8 @@ function AddEntry() {
                     <button 
                       type="submit" 
                       className="btn btn-primary"
-                      disabled={isSubmitting}
                     >
-                      {isSubmitting ? (
-                        <>
-                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                          {editMode ? 'Updating...' : 'Adding...'}
-                        </>
-                      ) : (
-                        editMode ? 'Update Entry' : 'Add Entry'
-                      )}
+                      {editMode ? 'Update Entry' : 'Add Entry'}
                     </button>
                   </div>
                 </form>
@@ -1090,7 +1684,7 @@ function AddEntry() {
       )}
 
       {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
+      {showDeleteConfirmation && (
         <div
           className="modal"
           style={{
@@ -1111,7 +1705,7 @@ function AddEntry() {
                 <button
                   type="button"
                   className="btn-close"
-                  onClick={() => setShowDeleteConfirm(false)}
+                  onClick={handleDeleteCancel}
                 ></button>
               </div>
               <div className="modal-body">
@@ -1120,10 +1714,10 @@ function AddEntry() {
                 <p><strong>Instrument:</strong> {entryToDelete?.instrument}</p>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowDeleteConfirm(false)}>
+                <button type="button" className="btn btn-secondary" onClick={handleDeleteCancel}>
                   Cancel
                 </button>
-                <button type="button" className="btn btn-danger" onClick={confirmDelete}>
+                <button type="button" className="btn btn-danger" onClick={handleDeleteConfirm}>
                   Delete
                 </button>
               </div>
@@ -1138,6 +1732,159 @@ function AddEntry() {
         isOpen={showImageModal} 
         onClose={handleCloseImageModal} 
       />
+
+      {/* Entry Detail Modal */}
+      {detailEntry && (
+        <div
+          className="entry-detail-modal"
+          style={{
+            display: 'block',
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            zIndex: 1100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <div className="entry-detail-content">
+            <div className="entry-detail-header">
+              <h5 className="mb-0">Trade on {formatDate(detailEntry.date)}</h5>
+              <button
+                type="button"
+                className="entry-detail-close"
+                onClick={handleCloseDetail}
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <div className="d-flex align-items-center gap-3 mb-3">
+                <div className={`outcome-${detailEntry.outcome.toLowerCase()}`} style={{ fontSize: '1.1rem' }}>
+                  {detailEntry.outcome}
+                </div>
+                <div>
+                  <strong>{detailEntry.direction}</strong> {detailEntry.instrument}
+                </div>
+                <div className={detailEntry.profit_loss > 0 ? 'text-success' : detailEntry.profit_loss < 0 ? 'text-danger' : ''} style={{ fontSize: '1.1rem', fontWeight: 500 }}>
+                  {formatNumber(detailEntry.profit_loss)}
+                </div>
+              </div>
+            </div>
+            
+            <div className="entry-detail-grid">
+              <div className="entry-detail-item">
+                <div className="entry-detail-label">Risk:Reward Ratio</div>
+                <div className="entry-detail-value">{detailEntry.risk_reward_ratio || '-'}</div>
+              </div>
+              
+              <div className="entry-detail-item">
+                <div className="entry-detail-label">Risk %</div>
+                <div className="entry-detail-value">
+                  {detailEntry.risk_percent ? `${parseFloat(detailEntry.risk_percent).toFixed(2)}%` : '-'}
+                </div>
+              </div>
+              
+              <div className="entry-detail-item">
+                <div className="entry-detail-label">Followed Strategy</div>
+                <div className="entry-detail-value">
+                  {detailEntry.follow_strategy === true ? 'Yes' : detailEntry.follow_strategy === false ? 'No' : '-'}
+                </div>
+              </div>
+              
+              <div className="entry-detail-item">
+                <div className="entry-detail-label">Feeling Before</div>
+                <div className="entry-detail-value d-flex align-items-center">
+                  <span>{detailEntry.feeling_before || '-'}</span>
+                  {detailEntry.confidence_before && (
+                    <span className="rating-number ms-2">
+                      {detailEntry.confidence_before}/10
+                    </span>
+                  )}
+                </div>
+              </div>
+              
+              <div className="entry-detail-item">
+                <div className="entry-detail-label">Feeling During</div>
+                <div className="entry-detail-value d-flex align-items-center">
+                  <span>{detailEntry.feeling_during || '-'}</span>
+                  {detailEntry.confidence_during && (
+                    <span className="rating-number ms-2">
+                      {detailEntry.confidence_during}/10
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-4">
+              <div className="entry-detail-item" style={{ gridColumn: "1 / -1" }}>
+                <div className="entry-detail-label">Risk Management</div>
+                <div className="entry-detail-value" style={{ minHeight: '60px', whiteSpace: 'pre-wrap' }}>
+                  {detailEntry.risk_management || '-'}
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-4">
+              <div className="entry-detail-item" style={{ gridColumn: "1 / -1" }}>
+                <div className="entry-detail-label d-flex align-items-center justify-content-between">
+                  <span>Review</span>
+                  {detailEntry.review_rating && (
+                    <span className="rating-number">
+                      Rating: {detailEntry.review_rating}/10
+                    </span>
+                  )}
+                </div>
+                <div className="entry-detail-value" style={{ minHeight: '100px', whiteSpace: 'pre-wrap' }}>
+                  {detailEntry.review || '-'}
+                </div>
+              </div>
+            </div>
+            
+            {detailEntry.images && detailEntry.images.length > 0 && (
+              <div className="mt-4">
+                <div className="entry-detail-label mb-2">Trade Images</div>
+                <div className="entry-detail-images">
+                  {detailEntry.images.map((image, idx) => (
+                    <img 
+                      key={idx}
+                      src={image}
+                      alt={`Trade image ${idx + 1}`}
+                      className="entry-detail-image"
+                      onClick={(e) => handleImageClick(image, e)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            <div className="mt-4 d-flex justify-content-end">
+              <button
+                className="action-button edit me-2"
+                onClick={() => {
+                  handleCloseDetail();
+                  handleEdit(detailEntry);
+                }}
+              >
+                Edit Entry
+              </button>
+              <button
+                className="action-button"
+                onClick={handleCloseDetail}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      <style>{tableStyles}</style>
     </div>
   );
 }

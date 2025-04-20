@@ -35,6 +35,21 @@ class JournalEntry(models.Model):
         ('A little worried', 'A little worried'),
         ('Very uneasy', 'Very uneasy'),
     ]
+    FEELING_BEFORE_CHOICES = [
+        ('Hesitant', 'Hesitant'),
+        ('Slightly hesitant', 'Slightly hesitant'),
+        ('Neutral', 'Neutral'),
+        ('Slightly confident', 'Slightly confident'),
+        ('Very confident', 'Very confident'),
+    ]
+    FEELING_DURING_CHOICES = [
+        ('Very worried', 'Very worried'),
+        ('Worried', 'Worried'),
+        ('Slightly worried', 'Slightly worried'),
+        ('Neutral', 'Neutral'),
+        ('Slightly confident', 'Slightly confident'),
+        ('Very confident', 'Very confident'),
+    ]
     
     journal = models.ForeignKey(Journal, on_delete=models.CASCADE, related_name='entries')
     date = models.DateField()
@@ -44,10 +59,14 @@ class JournalEntry(models.Model):
     risk_management = models.TextField()
     # Whether trader followed their strategy
     follow_strategy = models.BooleanField(default=True, help_text="Did you follow your trading strategy for this trade?")
-    # New fields for emotion tracking and review
-    feeling_before = models.TextField(blank=True, null=True)
+    # Updated fields for emotion tracking with structured options
+    feeling_before = models.CharField(max_length=50, choices=FEELING_BEFORE_CHOICES, blank=True, null=True)
+    confidence_before = models.IntegerField(null=True, blank=True, help_text="Confidence level before trade (1-10)")
+    feeling_during = models.CharField(max_length=50, choices=FEELING_DURING_CHOICES, blank=True, null=True)
+    confidence_during = models.IntegerField(null=True, blank=True, help_text="Confidence level during trade (1-10)")
     feeling_during_text = models.TextField(blank=True, null=True)
     review = models.TextField(blank=True, null=True)
+    review_rating = models.IntegerField(null=True, blank=True, help_text="Rating for this trade (1-10)")
     # Amount risked as a percentage
     risk_percent = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, help_text="Percentage of account risked on this trade")
     additional_comments = models.TextField(blank=True, null=True)
