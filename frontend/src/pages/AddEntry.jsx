@@ -401,7 +401,13 @@ function AddEntry() {
       try {
         const response = await axios.get(`${API_BASE_URL}/journal/${id}/entries/`);
         console.log('API Response:', response.data);
-        setEntries(Array.isArray(response.data) ? response.data : []);
+        
+        // Sort entries by date (oldest to newest) before setting state
+        const sortedEntries = Array.isArray(response.data) 
+          ? [...response.data].sort((a, b) => new Date(a.date) - new Date(b.date))
+          : [];
+          
+        setEntries(sortedEntries);
       } catch (error) {
         console.error('Error fetching entries:', error);
       }

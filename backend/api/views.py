@@ -507,6 +507,7 @@ class TradingFeedbackView(APIView):
         emotions_during = Counter()
         daily_trade_counts = Counter()
         risk_percentages = []
+        risk_reward_ratios = []  # New list to track risk-to-reward ratios
         
         for entry in entries:
             # Count trade outcomes
@@ -524,6 +525,13 @@ class TradingFeedbackView(APIView):
             # Check risk percentage against max_risk
             if entry.risk_percent and float(entry.risk_percent) > float(journal.max_risk):
                 risk_exceeded_count += 1
+            
+            # Track risk reward ratios
+            if entry.risk_reward_ratio and entry.risk_reward_ratio != '' and not isinstance(entry.risk_reward_ratio, type(None)):
+                try:
+                    risk_reward_ratios.append(float(entry.risk_reward_ratio))
+                except (ValueError, TypeError):
+                    pass
                 
             # Collect trade date for daily trade count
             if entry.date:
@@ -566,6 +574,9 @@ class TradingFeedbackView(APIView):
         # Calculate average risk
         avg_risk = statistics.mean(risk_percentages) if risk_percentages else 0
         
+        # Calculate average risk-reward ratio
+        avg_risk_reward_ratio = statistics.mean(risk_reward_ratios) if risk_reward_ratios else 0
+        
         # Find days with multiple trades
         overtrading_days = [date for date, count in daily_trade_counts.items() if count > 2]
         
@@ -596,6 +607,7 @@ class TradingFeedbackView(APIView):
             'net_pnl': round(float(total_profit - total_loss), 2),
             'risk_exceeded_count': risk_exceeded_count,
             'avg_risk': round(avg_risk, 2),
+            'avg_risk_reward_ratio': round(avg_risk_reward_ratio, 2),
             'overtrading_days': len(overtrading_days),
             'most_common_instruments': most_common_instruments,
             'most_common_emotions_before': most_common_emotions_before,
@@ -627,8 +639,7 @@ Trading Summary:
  - Win rate: {summary['win_rate']}%
  - Total trades: {summary['total_trades']}
  - Net P&L: {summary['net_pnl']}
- - Avg. Risk/Reward: {summary['avg_risk']}
- - Strategy followed: {strategy_followed_count}/{summary['total_trades']}
+ - Avg. Risk/Reward: {summary['avg_risk_reward_ratio']}
 
 Key Strengths:
  -
@@ -739,7 +750,7 @@ You are a seasoned trading performance coach. Provide a concise ONE‑PAGE weekl
    • Win rate: {summary['win_rate']}%
    • Total trades: {summary['total_trades']}
    • Net P&L: {summary['net_pnl']}
-   • Avg. risk‑to‑reward: {summary['avg_risk']}
+   • Avg. risk‑to‑reward: {summary['avg_risk_reward_ratio']}
 
 2. Performance Assessment:
    • Risk Management – Did the trader respect the max risk of {summary['max_risk']}%? Indicate any risk breaches ({summary['risk_exceeded_count']} times).

@@ -629,16 +629,21 @@ function Dashboard() {
       }
     });
     
-    // Calculate average Risk to Reward ratio
+    // Calculate average Risk to Reward ratio - ensure we use the actual values without any manipulation
     const validRiskRewardEntries = entries.filter(entry => 
       entry.risk_reward_ratio !== null && 
       entry.risk_reward_ratio !== undefined &&
       !isNaN(parseFloat(entry.risk_reward_ratio))
     );
     
+    // Calculate the total risk-to-reward as the sum of all individual risk-to-reward values
+    // This follows the formula: (2RR + 15RR + 4RR) / 3 (number of executions)
+    const totalRiskReward = validRiskRewardEntries.reduce((sum, entry) => 
+      sum + parseFloat(entry.risk_reward_ratio), 0);
+    
+    // Use the total trades count as the denominator to get the average
     const avgRiskReward = validRiskRewardEntries.length > 0 
-      ? validRiskRewardEntries.reduce((sum, entry) => 
-          sum + parseFloat(entry.risk_reward_ratio), 0) / validRiskRewardEntries.length 
+      ? totalRiskReward / validRiskRewardEntries.length
       : 0;
     
     // Calculate average win and loss
