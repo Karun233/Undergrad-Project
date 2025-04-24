@@ -9,30 +9,121 @@ function Milestones() {
   const [milestones, setMilestones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState("");
   const navigate = useNavigate();
 
-  // Fetch milestones data
+  // Fetch milestones data and sync with existing entries
   useEffect(() => {
-    const fetchMilestones = async () => {
+    const fetchMilestonesAndSync = async () => {
       try {
-        const response = await api.get(`/api/journal/${id}/milestones/`);
+        setSyncing(true);
+        setSyncMessage("Loading milestones...");
         
-        setMilestones(response.data);
-        setLoading(false);
+        // First, fetch existing milestones
+        const response = await api.get(`/api/journal/${id}/milestones/`);
+        console.log("Initial milestones:", response.data);
         
         // If no milestones exist yet, create default ones
         if (response.data.length === 0) {
-          createDefaultMilestones();
+          setSyncMessage("Creating default milestones...");
+          await createDefaultMilestones();
+        } else {
+          // Check if we need to add any missing milestone types
+          setSyncMessage("Checking for missing milestone types...");
+          await checkAndAddMissingMilestones(response.data);
+          
+          // Then, recalculate all milestone progress with existing entries
+          setSyncMessage("Syncing with journal entries...");
+          const syncResponse = await api.post(`/api/journal/${id}/milestones/recalculate/`);
+          console.log("After sync, milestones:", syncResponse.data);
+          setMilestones(syncResponse.data);
         }
-      } catch (err) {
-        setError("Failed to fetch milestones");
+        
         setLoading(false);
-        console.error("Error fetching milestones:", err);
+        setSyncing(false);
+      } catch (err) {
+        setError("Failed to fetch or sync milestones");
+        setLoading(false);
+        setSyncing(false);
+        console.error("Error with milestones:", err);
       }
     };
 
-    fetchMilestones();
+    fetchMilestonesAndSync();
   }, [id, navigate]);
+
+  // Function to manually trigger milestone recalculation
+  const syncMilestones = async () => {
+    try {
+      setSyncing(true);
+      setSyncMessage("Syncing with journal entries...");
+      
+      const response = await api.post(`/api/journal/${id}/milestones/recalculate/`);
+      console.log("After manual sync, milestones:", response.data);
+      setMilestones(response.data);
+      
+      setSyncing(false);
+    } catch (err) {
+      setError("Failed to sync milestones");
+      setSyncing(false);
+      console.error("Error syncing milestones:", err);
+    }
+  };
+
+  // Check if any milestone types are missing and add them
+  const checkAndAddMissingMilestones = async (existingMilestones) => {
+    // Define all milestone types we expect to have
+    const expectedTypes = [
+      { 
+        type: "followed_plan", 
+        name: "Followed Plan", 
+        description: "Complete 5 trades where you followed your trading plan",
+        target: 5
+      },
+      { 
+        type: "journal_trade", 
+        name: "Journal Trade", 
+        description: "Record 10 trades in your journal",
+        target: 10
+      },
+      { 
+        type: "high_rating", 
+        name: "High Rating", 
+        description: "Achieve 5 trades with review rating 8 or higher",
+        target: 5
+      },
+      { 
+        type: "profitable_day", 
+        name: "Profitable Day", 
+        description: "Record 7 profitable trades",
+        target: 7
+      }
+    ];
+    
+    // Get existing milestone types
+    const existingTypes = existingMilestones.map(m => m.type);
+    
+    // Find missing types
+    const missingTypes = expectedTypes.filter(et => !existingTypes.includes(et.type));
+    
+    // Add any missing milestone types
+    if (missingTypes.length > 0) {
+      for (const milestone of missingTypes) {
+        try {
+          await api.post(`/api/journal/${id}/milestones/create/`, {
+            name: milestone.name,
+            description: milestone.description,
+            type: milestone.type,
+            target: milestone.target,
+            current_progress: 0
+          });
+        } catch (err) {
+          console.error(`Error creating ${milestone.type} milestone:`, err);
+        }
+      }
+    }
+  };
 
   // Create default milestones if none exist
   const createDefaultMilestones = async () => {
@@ -61,9 +152,37 @@ function Milestones() {
         }
       );
 
-      // Refresh the milestones
+      // Create "High Rating" milestone
+      await api.post(
+        `/api/journal/${id}/milestones/create/`,
+        {
+          name: "High Rating",
+          description: "Achieve 5 trades with review rating 8 or higher",
+          type: "high_rating",
+          target: 5,
+          current_progress: 0
+        }
+      );
+
+      // Create "Profitable Day" milestone
+      await api.post(
+        `/api/journal/${id}/milestones/create/`,
+        {
+          name: "Profitable Day",
+          description: "Record 7 profitable trades",
+          type: "profitable_day",
+          target: 7,
+          current_progress: 0
+        }
+      );
+
+      // Fetch updated milestones including the new ones we created
       const response = await api.get(`/api/journal/${id}/milestones/`);
       setMilestones(response.data);
+      
+      // Sync the newly created milestones with existing entries
+      const syncResponse = await api.post(`/api/journal/${id}/milestones/recalculate/`);
+      setMilestones(syncResponse.data);
     } catch (err) {
       console.error("Error creating default milestones:", err);
     }
@@ -77,6 +196,7 @@ function Milestones() {
           <div className="spinner-border text-primary" role="status">
             <span className="visually-hidden">Loading...</span>
           </div>
+          <p className="mt-2">{syncMessage}</p>
         </div>
       </div>
     );
@@ -99,7 +219,22 @@ function Milestones() {
     <div>
       <Navbar />
       <div className="container mt-5">
-        <h2 className="mb-4">Milestones for Journal {id}</h2>
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <h2>Milestones</h2>
+          <button 
+            className="btn btn-primary" 
+            onClick={syncMilestones}
+            disabled={syncing}
+          >
+            {syncing ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Syncing...
+              </>
+            ) : "Refresh Milestones"}
+          </button>
+        </div>
+        
         <div className="row">
           {milestones.map((milestone) => (
             <div className="col-md-6 mb-4" key={milestone.id}>

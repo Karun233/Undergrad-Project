@@ -110,6 +110,8 @@ class Milestone(models.Model):
     MILESTONE_TYPES = [
         ('followed_plan', 'Followed Plan'),
         ('journal_trade', 'Journal Trade'),
+        ('high_rating', 'High Rating'),
+        ('profitable_day', 'Profitable Day'),
     ]
     
     journal = models.ForeignKey(Journal, on_delete=models.CASCADE, related_name='milestones')
@@ -125,8 +127,13 @@ class Milestone(models.Model):
         return f"{self.name} ({self.current_progress}/{self.target})"
     
     def update_progress(self):
+        """Update the completed status based on current progress"""
+        old_completed = self.completed
         if self.current_progress >= self.target:
             self.completed = True
         else:
             self.completed = False
-        self.save()
+            
+        # Only save if there's an actual change
+        if old_completed != self.completed or self._state.adding:
+            self.save()

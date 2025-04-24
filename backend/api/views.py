@@ -131,6 +131,20 @@ class JournalEntryCreateView(APIView):
                 for milestone in followed_plan_milestones:
                     milestone.current_progress += 1
                     milestone.update_progress()
+            
+            # Update "High Rating" milestone if review rating is 8 or above
+            if entry.review_rating is not None and entry.review_rating >= 8:
+                high_rating_milestones = Milestone.objects.filter(journal=journal, type='high_rating')
+                for milestone in high_rating_milestones:
+                    milestone.current_progress += 1
+                    milestone.update_progress()
+            
+            # Update "Profitable Day" milestone if profit_loss is positive
+            if entry.profit_loss is not None and entry.profit_loss > 0:
+                profitable_day_milestones = Milestone.objects.filter(journal=journal, type='profitable_day')
+                for milestone in profitable_day_milestones:
+                    milestone.current_progress += 1
+                    milestone.update_progress()
         except Exception as e:
             print(f"Error updating milestones: {str(e)}")
             # Don't let milestone updates stop the entry creation
@@ -285,11 +299,10 @@ class JournalEntryDeleteView(APIView):
 
     def delete(self, request, journal_id, entry_id):
         try:
-            entry = JournalEntry.objects.get(
-                id=entry_id,
-                journal_id=journal_id,
-                journal__owner=request.user
-            )
+            journal = Journal.objects.get(id=journal_id, owner=request.user)
+            entry = JournalEntry.objects.get(id=entry_id, journal=journal)
+        except Journal.DoesNotExist:
+            return Response({"error": "Journal not found"}, status=status.HTTP_404_NOT_FOUND)
         except JournalEntry.DoesNotExist:
             return Response({"error": "Entry not found"}, status=status.HTTP_404_NOT_FOUND)
         
@@ -305,7 +318,58 @@ class JournalEntryDeleteView(APIView):
         
         # Delete the entry (this will also delete related EntryImage objects due to CASCADE)
         entry.delete()
-        return Response({"message": "Entry deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+        
+        # Recalculate milestone progress
+        self.recalculate_milestones(journal)
+        
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
+    def recalculate_milestones(self, journal):
+        """Recalculate all milestone progress for a journal based on existing entries"""
+        try:
+            # Get all entries for this journal
+            entries = JournalEntry.objects.filter(journal=journal)
+            
+            # Get all milestones for this journal
+            milestones = Milestone.objects.filter(journal=journal)
+            
+            # Reset all milestone progress
+            for milestone in milestones:
+                milestone.current_progress = 0
+                milestone.completed = False
+            
+            # For each entry, update appropriate milestones
+            for entry in entries:
+                # Update Journal Trade milestone
+                journal_trade_milestones = milestones.filter(type='journal_trade')
+                for milestone in journal_trade_milestones:
+                    milestone.current_progress += 1
+                
+                # Update Followed Plan milestone
+                if entry.follow_strategy:
+                    followed_plan_milestones = milestones.filter(type='followed_plan')
+                    for milestone in followed_plan_milestones:
+                        milestone.current_progress += 1
+                
+                # Update High Rating milestone
+                if entry.review_rating is not None and entry.review_rating >= 8:
+                    high_rating_milestones = milestones.filter(type='high_rating')
+                    for milestone in high_rating_milestones:
+                        milestone.current_progress += 1
+                
+                # Update Profitable Day milestone
+                if entry.profit_loss is not None and entry.profit_loss > 0:
+                    profitable_day_milestones = milestones.filter(type='profitable_day')
+                    for milestone in profitable_day_milestones:
+                        milestone.current_progress += 1
+            
+            # Update completed status and save all milestones
+            for milestone in milestones:
+                milestone.update_progress()
+                
+        except Exception as e:
+            print(f"Error recalculating milestones: {str(e)}")
+            # Error handling but don't let this break deletion
 
 class EntryImageDeleteView(APIView):
     permission_classes = [IsAuthenticated]
@@ -817,12 +881,62 @@ class MilestoneCreateView(APIView):
         
         data = request.data.copy()
         data['journal'] = journal.id
+        
+        # Check if milestone of same type already exists for this journal
+        milestone_type = data.get('type')
+        if milestone_type and Milestone.objects.filter(journal=journal, type=milestone_type).exists():
+            return Response(
+                {"error": f"A milestone of type '{milestone_type}' already exists for this journal"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
         serializer = MilestoneSerializer(data=data)
         
         if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            milestone = serializer.save()
+            
+            # Initialize milestone progress based on existing entries
+            self.initialize_milestone_progress(milestone, journal)
+            
+            # Get updated milestone data
+            updated_serializer = MilestoneSerializer(milestone)
+            return Response(updated_serializer.data, status=status.HTTP_201_CREATED)
+            
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def initialize_milestone_progress(self, milestone, journal):
+        """Initialize milestone progress based on existing entries"""
+        try:
+            # Get all entries for this journal
+            entries = JournalEntry.objects.filter(journal=journal)
+            
+            # Initialize progress counter
+            progress_count = 0
+            
+            # Count entries based on milestone type
+            if milestone.type == 'journal_trade':
+                # Simply count all journal entries
+                progress_count = entries.count()
+                
+            elif milestone.type == 'followed_plan':
+                # Count entries where follow_strategy is True
+                progress_count = entries.filter(follow_strategy=True).count()
+                
+            elif milestone.type == 'high_rating':
+                # Count entries with review_rating >= 8
+                progress_count = entries.filter(review_rating__gte=8).count()
+                
+            elif milestone.type == 'profitable_day':
+                # Count entries with positive profit_loss
+                progress_count = entries.filter(profit_loss__gt=0).count()
+            
+            # Update milestone progress
+            milestone.current_progress = progress_count
+            milestone.update_progress()
+            
+        except Exception as e:
+            print(f"Error initializing milestone progress: {str(e)}")
+            # Don't let this break milestone creation
 
 class MilestoneUpdateView(APIView):
     permission_classes = [IsAuthenticated]
@@ -861,3 +975,70 @@ class MilestoneDeleteView(APIView):
         
         milestone.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+class MilestoneRecalculateView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, journal_id):
+        """Recalculate all milestone progress for an existing journal"""
+        try:
+            journal = Journal.objects.get(id=journal_id, owner=request.user)
+            print(f"Recalculating milestones for journal ID {journal_id} owned by {request.user.username}")
+        except Journal.DoesNotExist:
+            return Response({"error": "Journal not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Get all entries for this journal
+        entries = JournalEntry.objects.filter(journal=journal)
+        print(f"Found {entries.count()} journal entries")
+        
+        # Get all milestones for this journal
+        milestones = Milestone.objects.filter(journal=journal)
+        print(f"Found {milestones.count()} milestones to update")
+        
+        if not milestones.exists():
+            return Response({"error": "No milestones found for this journal"}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Create dictionaries to store counts by milestone type
+        counts = {
+            'journal_trade': 0,
+            'followed_plan': 0,
+            'high_rating': 0,
+            'profitable_day': 0
+        }
+        
+        # Count entries for each milestone type
+        for entry in entries:
+            print(f"Processing entry ID {entry.id} from {entry.date}")
+            
+            # Journal Trade - counts all entries
+            counts['journal_trade'] += 1
+            
+            # Followed Plan - only if follow_strategy is True
+            if entry.follow_strategy:
+                print(f"Entry followed strategy: {entry.follow_strategy}")
+                counts['followed_plan'] += 1
+            
+            # High Rating - only if review_rating is 8 or higher
+            if entry.review_rating is not None and entry.review_rating >= 8:
+                print(f"Entry has high rating: {entry.review_rating}")
+                counts['high_rating'] += 1
+            
+            # Profitable Day - only if profit_loss is positive
+            if entry.profit_loss is not None and entry.profit_loss > 0:
+                print(f"Entry is profitable: {entry.profit_loss}")
+                counts['profitable_day'] += 1
+        
+        # Update each milestone with the counted values
+        for milestone in milestones:
+            milestone_type = milestone.type
+            if milestone_type in counts:
+                print(f"Updating {milestone_type} milestone: was {milestone.current_progress}, now {counts[milestone_type]}")
+                milestone.current_progress = counts[milestone_type]
+                milestone.save()
+                milestone.update_progress()  # Updates completed status
+                print(f"Final milestone status: {milestone.type} - {milestone.current_progress}/{milestone.target} - Completed: {milestone.completed}")
+        
+        # Fetch fresh milestone data to ensure we get the most up-to-date data
+        updated_milestones = Milestone.objects.filter(journal=journal)
+        serializer = MilestoneSerializer(updated_milestones, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
