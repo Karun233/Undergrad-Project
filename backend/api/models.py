@@ -105,3 +105,28 @@ class UserProfile(models.Model):
     
     def __str__(self):
         return f"Profile for {self.user.username}"
+
+class Milestone(models.Model):
+    MILESTONE_TYPES = [
+        ('followed_plan', 'Followed Plan'),
+        ('journal_trade', 'Journal Trade'),
+    ]
+    
+    journal = models.ForeignKey(Journal, on_delete=models.CASCADE, related_name='milestones')
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True, null=True)
+    type = models.CharField(max_length=50, choices=MILESTONE_TYPES)
+    target = models.IntegerField(default=5)
+    current_progress = models.IntegerField(default=0)
+    completed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.name} ({self.current_progress}/{self.target})"
+    
+    def update_progress(self):
+        if self.current_progress >= self.target:
+            self.completed = True
+        else:
+            self.completed = False
+        self.save()

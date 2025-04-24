@@ -1,9 +1,9 @@
 from django.shortcuts import render
 from django.contrib.auth.models import User
 from rest_framework import generics
-from .serializers import UserSerializer, JournalSerializer, JournalEntrySerializer, EntryImageSerializer
+from .serializers import UserSerializer, JournalSerializer, JournalEntrySerializer, EntryImageSerializer, UserProfileSerializer, UserProfileDetailSerializer, MilestoneSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .models import Journal, JournalEntry, EntryImage
+from .models import Journal, JournalEntry, EntryImage, UserProfile, Milestone
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -12,8 +12,6 @@ import os
 from django.conf import settings
 from django.contrib.auth import authenticate
 from rest_framework.parsers import MultiPartParser, FormParser
-from .models import UserProfile
-from .serializers import UserProfileSerializer, UserProfileDetailSerializer
 import openai
 from django.conf import settings
 import statistics
@@ -109,12 +107,34 @@ class JournalEntryCreateView(APIView):
             # Save the updated entry with image URLs
             entry.save()
             
+            # Update milestones
+            self.update_milestones(journal, entry)
+            
             # Return updated entry
             updated_serializer = JournalEntrySerializer(entry)
             return Response(updated_serializer.data, status=status.HTTP_201_CREATED)
         
         print("Serializer errors:", serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def update_milestones(self, journal, entry):
+        try:
+            # Update "Journal Trade" milestone
+            journal_trade_milestones = Milestone.objects.filter(journal=journal, type='journal_trade')
+            for milestone in journal_trade_milestones:
+                milestone.current_progress += 1
+                milestone.update_progress()
+            
+            # Update "Followed Plan" milestone if the trade followed the plan
+            if entry.follow_strategy:
+                followed_plan_milestones = Milestone.objects.filter(journal=journal, type='followed_plan')
+                for milestone in followed_plan_milestones:
+                    milestone.current_progress += 1
+                    milestone.update_progress()
+        except Exception as e:
+            print(f"Error updating milestones: {str(e)}")
+            # Don't let milestone updates stop the entry creation
+            pass
 
 class JournalEntryListView(APIView):
     permission_classes = [IsAuthenticated]
@@ -771,3 +791,73 @@ Return the report in plain text Markdown without extra commentary."""
         except Exception as e:
             print(f"OpenAI weekly report error: {e}")
             return "AI feedback unavailable at this time."
+
+
+# Milestone Views
+class MilestoneListView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, journal_id):
+        try:
+            journal = Journal.objects.get(id=journal_id, owner=request.user)
+            milestones = Milestone.objects.filter(journal=journal)
+            serializer = MilestoneSerializer(milestones, many=True)
+            return Response(serializer.data)
+        except Journal.DoesNotExist:
+            return Response({"error": "Journal not found"}, status=status.HTTP_404_NOT_FOUND)
+
+class MilestoneCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, journal_id):
+        try:
+            journal = Journal.objects.get(id=journal_id, owner=request.user)
+        except Journal.DoesNotExist:
+            return Response({"error": "Journal not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        data = request.data.copy()
+        data['journal'] = journal.id
+        serializer = MilestoneSerializer(data=data)
+        
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class MilestoneUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def put(self, request, journal_id, milestone_id):
+        try:
+            journal = Journal.objects.get(id=journal_id, owner=request.user)
+            milestone = Milestone.objects.get(id=milestone_id, journal=journal)
+        except Journal.DoesNotExist:
+            return Response({"error": "Journal not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Milestone.DoesNotExist:
+            return Response({"error": "Milestone not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = MilestoneSerializer(milestone, data=request.data, partial=True)
+        if serializer.is_valid():
+            updated_milestone = serializer.save()
+            # Check if we need to update completed status
+            updated_milestone.update_progress()
+            
+            # Refresh serializer with updated instance
+            updated_serializer = MilestoneSerializer(updated_milestone)
+            return Response(updated_serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class MilestoneDeleteView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def delete(self, request, journal_id, milestone_id):
+        try:
+            journal = Journal.objects.get(id=journal_id, owner=request.user)
+            milestone = Milestone.objects.get(id=milestone_id, journal=journal)
+        except Journal.DoesNotExist:
+            return Response({"error": "Journal not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Milestone.DoesNotExist:
+            return Response({"error": "Milestone not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        milestone.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

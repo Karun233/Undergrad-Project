@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
-from .models import Journal, JournalEntry, EntryImage
+from .models import Journal, JournalEntry, EntryImage, Milestone
 import json
 from .models import UserProfile
 
@@ -118,3 +118,17 @@ class UserProfileDetailSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.profile_picture.url)
             return obj.profile_picture.url
         return None
+
+class MilestoneSerializer(serializers.ModelSerializer):
+    progress_percentage = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Milestone
+        fields = ['id', 'journal', 'name', 'description', 'type', 'target', 
+                  'current_progress', 'completed', 'created_at', 'progress_percentage']
+        read_only_fields = ['id', 'created_at', 'progress_percentage']
+    
+    def get_progress_percentage(self, obj):
+        if obj.target == 0:
+            return 0
+        return min(100, int((obj.current_progress / obj.target) * 100))

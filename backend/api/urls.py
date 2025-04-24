@@ -33,6 +33,11 @@ urlpatterns = [
     # Weekly report
     path('journal/<int:journal_id>/weekly-report/', views.WeeklyReportView.as_view(), name='weekly-report'),
     
+    # Milestone endpoints
+    path('journal/<int:journal_id>/milestones/', views.MilestoneListView.as_view(), name='milestone-list'),
+    path('journal/<int:journal_id>/milestones/create/', views.MilestoneCreateView.as_view(), name='milestone-create'),
+    path('journal/<int:journal_id>/milestones/<int:milestone_id>/update/', views.MilestoneUpdateView.as_view(), name='milestone-update'),
+    path('journal/<int:journal_id>/milestones/<int:milestone_id>/delete/', views.MilestoneDeleteView.as_view(), name='milestone-delete'),
 ]
 
 if settings.DEBUG:
