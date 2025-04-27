@@ -47,7 +47,28 @@ class DeleteJournal(generics.DestroyAPIView):
     def get_queryset(self):
         user = self.request.user
         return Journal.objects.filter(owner=user)
+
+class UpdateJournalView(generics.UpdateAPIView):
+    serializer_class = JournalSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'pk'
     
+    def get_queryset(self):
+        user = self.request.user
+        return Journal.objects.filter(owner=user)
+    
+    def update(self, request, *args, **kwargs):
+        try:
+            journal = self.get_object()
+            serializer = self.get_serializer(journal, data=request.data, partial=True)
+            
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Journal.DoesNotExist:
+            return Response({"error": "Journal not found"}, status=status.HTTP_404_NOT_FOUND)
+
 class JournalDetailView(APIView):
     permission_classes = [IsAuthenticated]
 

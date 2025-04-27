@@ -8,8 +8,11 @@ function Home() {
   const [description, setDescription] = useState("");
   const [title, setTitle] = useState("");
   const [maxRisk, setMaxRisk] = useState(1.0);
+  const [accountSize, setAccountSize] = useState(10000.00);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingJournalId, setEditingJournalId] = useState(null);
 
   useEffect(() => {
     getJournals();
@@ -46,7 +49,8 @@ function Home() {
       .post("/api/journal/", { 
         description, 
         title, 
-        max_risk: parseFloat(maxRisk)
+        max_risk: parseFloat(maxRisk),
+        account_size: parseFloat(accountSize)
       })
       .then((res) => {
         if (res.status === 201) console.log("Journal was created.");
@@ -68,6 +72,7 @@ function Home() {
     setTitle("");
     setDescription("");
     setMaxRisk(1.0);
+    setAccountSize(10000.00);
   };
 
   // Stop propagation to prevent clicks inside the modal from closing it
@@ -83,6 +88,28 @@ function Home() {
       month: 'numeric', 
       day: 'numeric' 
     });
+  };
+
+  // Update existing journal
+  const updateJournal = (e, id) => {
+    e.preventDefault();
+    api
+      .put(`/api/journal/update/${id}/`, { 
+        description, 
+        title, 
+        max_risk: parseFloat(maxRisk),
+        account_size: parseFloat(accountSize)
+      })
+      .then((res) => {
+        if (res.status === 200) console.log("Journal was updated.");
+        else console.error("Failed to update Journal");
+        closeModal();
+        getJournals();
+        // Reset editing state
+        setIsEditing(false);
+        setEditingJournalId(null);
+      })
+      .catch((error) => console.error(error));
   };
 
   return (
@@ -102,18 +129,35 @@ function Home() {
                   <div className="journal-meta">
                     <p className="journal-date">{formatDate(journal.created_at)}</p>
                     <p className="journal-risk">Max Risk: {journal.max_risk}%</p>
+                    <p className="journal-account-size">Account Size: ${journal.account_size || "N/A"}</p>
                   </div>
                   <div className="journal-actions">
                     <Link to={`/journal/${journal.id}/add-entry`}>
                       <button className="open-journal-btn">Open Journal</button>
                     </Link>
-                    <button 
-                      className="delete-btn" 
-                      onClick={() => deleteJournal(journal.id)}
-                      disabled={isDeleting}
-                    >
-                      Delete
-                    </button>
+                    <div className="journal-management-buttons">
+                      <button 
+                        className="delete-btn" 
+                        onClick={() => deleteJournal(journal.id)}
+                        disabled={isDeleting}
+                      >
+                        Delete
+                      </button>
+                      <button 
+                        className="edit-btn" 
+                        onClick={() => {
+                          setIsEditing(true);
+                          setEditingJournalId(journal.id);
+                          setTitle(journal.title);
+                          setDescription(journal.description);
+                          setMaxRisk(journal.max_risk);
+                          setAccountSize(journal.account_size);
+                          openModal();
+                        }}
+                      >
+                        Edit
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -157,9 +201,9 @@ function Home() {
               overflow: 'auto'
             }}
           >
-            <h2>Create New Journal</h2>
+            <h2>{isEditing ? 'Edit Journal' : 'Create New Journal'}</h2>
             
-            <form onSubmit={createJournal}>
+            <form onSubmit={isEditing ? (e) => updateJournal(e, editingJournalId) : createJournal}>
               <div className="form-group" style={{ marginBottom: '15px' }}>
                 <label htmlFor="title" style={{ display: 'block', marginBottom: '5px' }}>Title:</label>
                 <input
@@ -226,6 +270,32 @@ function Home() {
                 </small>
               </div>
               
+              <div className="form-group" style={{ marginBottom: '15px' }}>
+                <label htmlFor="accountSize" style={{ display: 'block', marginBottom: '5px' }}>
+                  Account Size ($):
+                </label>
+                <input
+                  type="number"
+                  id="accountSize"
+                  name="accountSize"
+                  required
+                  min="0.00"
+                  step="0.01"
+                  value={accountSize}
+                  onChange={(e) => setAccountSize(e.target.value)}
+                  placeholder="Enter account size"
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    borderRadius: '4px',
+                    border: '1px solid #ddd'
+                  }}
+                />
+                <small style={{ display: 'block', marginTop: '5px', color: '#666' }}>
+                  This is the initial size of your trading account.
+                </small>
+              </div>
+              
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <button 
                   type="button"
@@ -252,7 +322,7 @@ function Home() {
                     cursor: 'pointer'
                   }}
                 >
-                  Create Journal
+                  {isEditing ? 'Update Journal' : 'Create Journal'}
                 </button>
               </div>
             </form>

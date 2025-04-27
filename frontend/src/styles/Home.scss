@@ -56,36 +56,61 @@
     .journal-actions {
       display: flex;
       justify-content: space-between;
-      border-top: 1px solid #f0f0f0;
-      padding-top: 1rem;
-
+      align-items: center;
+      margin-top: 15px;
+      
+      .journal-management-buttons {
+        display: flex;
+        gap: 10px;
+        
+        .delete-btn, .edit-btn {
+          padding: 6px 12px;
+          border-radius: 4px;
+          font-size: 14px;
+          border: 1px solid;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        
+        .delete-btn {
+          background-color: white;
+          border-color: #dc3545;
+          color: #dc3545;
+          
+          &:hover {
+            background-color: #dc3545;
+            color: white;
+          }
+          
+          &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+          }
+        }
+        
+        .edit-btn {
+          background-color: white;
+          border-color: #6c757d;
+          color: #6c757d;
+          
+          &:hover {
+            background-color: #6c757d;
+            color: white;
+          }
+        }
+      }
+      
       .open-journal-btn {
         background-color: #007bff;
         color: white;
         border: none;
+        padding: 8px 16px;
         border-radius: 4px;
-        padding: 0.5rem 1rem;
-        font-size: 0.9rem;
         cursor: pointer;
-
+        transition: background-color 0.2s ease;
+        
         &:hover {
           background-color: #0069d9;
-        }
-      }
-
-      .delete-btn {
-        background-color: transparent;
-        color: #dc3545;
-        border: 1px solid #dc3545;
-        border-radius: 4px;
-        padding: 0.5rem 1rem;
-        font-size: 0.9rem;
-        cursor: pointer;
-        transition: all 0.2s;
-
-        &:hover {
-          background-color: #dc3545;
-          color: white;
         }
       }
     }

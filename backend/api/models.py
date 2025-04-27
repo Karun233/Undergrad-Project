@@ -8,6 +8,7 @@ class Journal(models.Model):
     description = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     max_risk = models.DecimalField(max_digits=5, decimal_places=2, default=1.0, help_text="Maximum risk percentage allowed per trade")
+    account_size = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text="Initial account size for calculating position sizes")
 
     def __str__(self):
         return self.title

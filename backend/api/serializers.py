@@ -17,7 +17,7 @@ class UserSerializer(serializers.ModelSerializer):
 class JournalSerializer(serializers.ModelSerializer):
     class Meta:
         model = Journal
-        fields = ["id", "title", "description", "owner", "created_at", "max_risk"]
+        fields = ["id", "title", "description", "owner", "created_at", "max_risk", "account_size"]
         read_only_fields = ["owner"]
 
 class EntryImageSerializer(serializers.ModelSerializer):
