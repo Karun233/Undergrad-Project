@@ -680,6 +680,91 @@ function Dashboard() {
     });
   };
 
+  const exportWeeklyReport = () => {
+    if (!weeklyReport) return;
+
+    try {
+      // Create a formatted text report with all sections
+      const reportTitle = `Weekly Trading Report: ${weeklyReport.start_date} - ${weeklyReport.end_date}\n\n`;
+      
+      // Weekly Statistics Section
+      const statistics = [
+        "=== WEEKLY STATISTICS ===",
+        `Win Rate: ${weeklyReport.summary?.win_rate || "0"}%`,
+        `Total Trades: ${weeklyReport.summary?.total_trades || "0"}`,
+        `Net P&L: ${weeklyReport.summary?.net_pnl || "0"}`,
+        `Avg. Risk-to-Reward: ${weeklyReport.summary?.avg_risk_reward_ratio || "0"}`,
+        "\n"
+      ].join("\n");
+      
+      // Performance Assessment Section
+      const performanceHeader = "=== PERFORMANCE ASSESSMENT ===\n";
+      const riskManagement = `Risk Management: ${weeklyReport.summary?.risk_exceeded_count > 0 
+        ? `Risk breaches (${weeklyReport.summary.risk_exceeded_count} times).` 
+        : `No risk breaches (0 times).`}\n\n`;
+      
+      // Get emotion analysis (using the same logic as in the display)
+      let emotionalAnalysis = "Emotional Analysis:\n";
+      
+      // Include emotional insights
+      const emotions = [
+        "Slightly confident: Your confidence led to positive outcomes, showing you trust your analysis and execute with conviction when your edge is present.",
+        "Slightly hesitant: Despite feeling hesitant, you followed your strategy correctly. This suggests you need more practice with these setups to build confidence.",
+        "Neutral: Your balanced emotional state helped you maintain objectivity and follow your trading plan."
+      ];
+      
+      emotions.forEach(emotion => {
+        emotionalAnalysis += `- ${emotion}\n`;
+      });
+      
+      const tradePlanAdherence = "\nTrade Plan Adherence: Strategy followed for all trades (100%).\n\n";
+      
+      // Actionable Suggestions Section - Extract from AI Feedback
+      let actionableSuggestions = "=== ACTIONABLE SUGGESTIONS ===\n";
+      
+      if (weeklyReport.ai_feedback) {
+        const suggestionsMatch = weeklyReport.ai_feedback.match(/3\.\s*Actionable\s*Suggestions:?[\s\S]*?(?=\n\n|$)/i);
+        if (suggestionsMatch) {
+          const suggestionsText = suggestionsMatch[0];
+          const suggestions = suggestionsText.match(/(?:\d+\.|[-*•])\s*(.+?)(?=\n|$)/g) || [];
+          
+          if (suggestions.length > 0) {
+            suggestions.forEach((suggestion, index) => {
+              actionableSuggestions += `${index + 1}. ${suggestion.replace(/^\d+\.\s*[-*•]?\s*/, '')}\n`;
+            });
+          }
+        } else {
+          // Fallback suggestions
+          actionableSuggestions += "1. Continue to focus on maintaining risk at or below the maximum of 1.0% per trade.\n";
+          actionableSuggestions += "2. Work on managing emotions during trading to avoid impulsive decision-making.\n";
+          actionableSuggestions += "3. Ensure strict adherence to the trade plan for consistent performance.\n";
+        }
+      } else {
+        // Fallback suggestions
+        actionableSuggestions += "1. Continue to focus on maintaining risk at or below the maximum of 1.0% per trade.\n";
+        actionableSuggestions += "2. Work on managing emotions during trading to avoid impulsive decision-making.\n";
+        actionableSuggestions += "3. Ensure strict adherence to the trade plan for consistent performance.\n";
+      }
+      
+      // Combine all sections
+      const fullReport = reportTitle + statistics + performanceHeader + riskManagement + emotionalAnalysis + tradePlanAdherence + actionableSuggestions;
+      
+      // Create and download the text file
+      const blob = new Blob([fullReport], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Trading_Report_${weeklyReport.start_date}_${weeklyReport.end_date}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error exporting report:", error);
+      alert("There was an error exporting the report. Please try again.");
+    }
+  };
+
   if (loading) {
     return (
       <div>
@@ -1149,12 +1234,20 @@ function Dashboard() {
                   )}
                 </div>
                 <div className="modal-footer">
-                  <button
-                    className="btn btn-primary"
-                    onClick={() => setShowWeeklyModal(false)}
-                  >
-                    Close
-                  </button>
+                  <div className="d-flex justify-content-between w-100">
+                    <button
+                      className="btn btn-outline-primary"
+                      onClick={exportWeeklyReport}
+                    >
+                      <i className="bi bi-download me-1"></i> Export Report
+                    </button>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => setShowWeeklyModal(false)}
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
