@@ -911,90 +911,316 @@ function Dashboard() {
               ) : feedbackError ? (
                 <div className="alert alert-danger">{feedbackError}</div>
               ) : aiFeedback ? (
-                <div>
-                  <div className="mb-4">
-                    <h6>Trading Coach Feedback:</h6>
-                    <div className="p-3 bg-light rounded border">
-                      {aiFeedback.feedback.split('\n\n').map((section, sectionIndex) => {
-                        // Skip empty sections
-                        if (!section.trim()) return null;
-                        
-                        // Handle section headers and bullet points
-                        if (section.includes('POSITIVES:') || section.includes('AREAS FOR IMPROVEMENT:') || section.includes('ACTION STEPS:')) {
-                          const [header, ...bulletPoints] = section.split('\n');
-                          return (
-                            <div key={sectionIndex} className="mb-3">
-                              <h5 className={`fw-bold ${header.includes('POSITIVES') ? 'text-success' : header.includes('AREAS') ? 'text-warning' : 'text-primary'}`}>
-                                {header}
-                              </h5>
-                              <ul className="mb-0">
-                                {bulletPoints.filter(point => point.trim()).map((point, bulletIndex) => (
-                                  <li key={bulletIndex}>{point.replace('- ', '')}</li>
-                                ))}
-                              </ul>
+                <div className="ai-feedback-container">
+                  <div className="trading-analysis-header mb-4">
+                    <h5 className="text-center fw-bold">Trading Performance Analysis</h5>
+                    <p className="text-center text-muted">Based on {aiFeedback.trades_analyzed} analyzed trades</p>
+                  </div>
+                  
+                  {/* Trading Metrics Summary */}
+                  <div className="row mb-4">
+                    <div className="col-md-12">
+                      <div className="card shadow-sm">
+                        <div className="card-body">
+                          <h6 className="mb-3 text-primary">Trading Metrics</h6>
+                          <div className="row metrics-grid">
+                            <div className="col-md-3 col-sm-6 metric-item">
+                              <div className="metric-label">Win Rate</div>
+                              <div className={`metric-value ${aiFeedback.summary.win_rate > 50 ? 'text-success' : aiFeedback.summary.win_rate > 40 ? 'text-warning' : 'text-danger'}`}>{aiFeedback.summary.win_rate}%</div>
                             </div>
-                          );
-                        }
-                        
-                        // Regular paragraph
-                        return <p key={sectionIndex}>{section}</p>;
-                      })}
+                            <div className="col-md-3 col-sm-6 metric-item">
+                              <div className="metric-label">Net P&L</div>
+                              <div className={`metric-value ${aiFeedback.summary.net_pnl > 0 ? 'text-success' : 'text-danger'}`}>
+                                ${Math.abs(aiFeedback.summary.net_pnl).toFixed(2)}
+                                {aiFeedback.summary.net_pnl > 0 ? ' profit' : ' loss'}
+                              </div>
+                            </div>
+                            <div className="col-md-3 col-sm-6 metric-item">
+                              <div className="metric-label">Avg. Risk/Reward</div>
+                              <div className={`metric-value ${aiFeedback.summary.avg_risk_reward_ratio >= 1.5 ? 'text-success' : aiFeedback.summary.avg_risk_reward_ratio >= 1 ? 'text-warning' : 'text-danger'}`}>
+                                {aiFeedback.summary.avg_risk_reward_ratio.toFixed(2)}
+                              </div>
+                            </div>
+                            <div className="col-md-3 col-sm-6 metric-item">
+                              <div className="metric-label">Profit Factor</div>
+                              <div className={`metric-value ${aiFeedback.summary.profit_factor >= 1.5 ? 'text-success' : aiFeedback.summary.profit_factor >= 1 ? 'text-warning' : 'text-danger'}`}>
+                                {aiFeedback.summary.profit_factor.toFixed(2)}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="row metrics-grid mt-3">
+                            <div className="col-md-3 col-sm-6 metric-item">
+                              <div className="metric-label">Account Size</div>
+                              <div className="metric-value">${aiFeedback.summary.account_size.toLocaleString()}</div>
+                            </div>
+                            <div className="col-md-3 col-sm-6 metric-item">
+                              <div className="metric-label">Account Return</div>
+                              <div className={`metric-value ${aiFeedback.summary.account_return_percentage > 0 ? 'text-success' : 'text-danger'}`}>
+                                {aiFeedback.summary.account_return_percentage.toFixed(2)}%
+                              </div>
+                            </div>
+                            <div className="col-md-3 col-sm-6 metric-item">
+                              <div className="metric-label">Avg. Risk</div>
+                              <div className={`metric-value ${aiFeedback.summary.avg_risk <= aiFeedback.summary.max_risk ? 'text-success' : 'text-danger'}`}>
+                                {aiFeedback.summary.avg_risk.toFixed(2)}%
+                              </div>
+                            </div>
+                            <div className="col-md-3 col-sm-6 metric-item">
+                              <div className="metric-label">Strategy Adherence</div>
+                              <div className={`metric-value ${aiFeedback.summary.strategy_followed_percentage >= 90 ? 'text-success' : aiFeedback.summary.strategy_followed_percentage >= 75 ? 'text-warning' : 'text-danger'}`}>
+                                {aiFeedback.summary.strategy_followed_percentage.toFixed(0)}%
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   
-                  {aiFeedback.summary && (
-                    <div className="row mt-4">
-                      <div className="col-md-6">
-                        <h6>Trading Metrics Analyzed:</h6>
-                        <ul className="list-group">
-                          <li className="list-group-item d-flex justify-content-between align-items-center">
-                            Total Trades
-                            <span className="badge bg-primary rounded-pill">{aiFeedback.summary.total_trades}</span>
-                          </li>
-                          <li className="list-group-item d-flex justify-content-between align-items-center">
-                            Win Rate
-                            <span className={`badge ${aiFeedback.summary.win_rate > 50 ? 'bg-success' : 'bg-warning'} rounded-pill`}>
-                              {aiFeedback.summary.win_rate}%
-                            </span>
-                          </li>
-                          <li className="list-group-item d-flex justify-content-between align-items-center">
-                            Average Risk
-                            <span className={`badge ${aiFeedback.summary.avg_risk <= aiFeedback.summary.max_risk ? 'bg-success' : 'bg-danger'} rounded-pill`}>
-                              {aiFeedback.summary.avg_risk}%
-                            </span>
-                          </li>
-                        </ul>
-                      </div>
+                  {/* AI Feedback Section */}
+                  <div className="ai-feedback-section">
+                    {/* Parse and display the AI feedback in a structured format */}
+                    {(() => {
+                      const feedback = aiFeedback.feedback;
                       
-                      <div className="col-md-6">
-                        <h6>Areas of Focus:</h6>
-                        <ul className="list-group">
+                      // Function to extract sections based on markdown headers
+                      const extractSection = (text, sectionName) => {
+                        const regex = new RegExp(`## ${sectionName}([\\s\\S]*?)(?=## |$)`, 'i');
+                        const match = text.match(regex);
+                        return match ? match[1].trim() : '';
+                      };
+                      
+                      // Extract different sections
+                      const performanceAnalysis = extractSection(feedback, 'Performance Analysis');
+                      const strengths = extractSection(feedback, 'Strengths');
+                      const improvements = extractSection(feedback, 'Areas for Improvement');
+                      const emotionalAnalysis = extractSection(feedback, 'Emotional Analysis');
+                      const actionPlan = extractSection(feedback, 'Action Plan');
+                      
+                      // Function to parse bullet points
+                      const parseBulletPoints = (text) => {
+                        if (!text) return [];
+                        // Match any bullet points with numbers, dashes, or asterisks
+                        const bulletRegex = /(?:^|\n)(?:\d+\.|\-|\*)\s*(.+?)(?=\n|$)/g;
+                        const bullets = [];
+                        let match;
+                        
+                        while ((match = bulletRegex.exec(text)) !== null) {
+                          bullets.push(match[1].trim());
+                        }
+                        
+                        return bullets.length ? bullets : [text]; // If no bullets found, return the text as a single item
+                      };
+                      
+                      // Parse strengths and improvements as bullet points
+                      const strengthBullets = parseBulletPoints(strengths);
+                      const improvementBullets = parseBulletPoints(improvements);
+                      const actionBullets = parseBulletPoints(actionPlan);
+                      
+                      return (
+                        <>
+                          {/* Performance Analysis Section */}
+                          {performanceAnalysis && (
+                            <div className="performance-analysis-section mb-4">
+                              <div className="card shadow-sm">
+                                <div className="card-body">
+                                  <h6 className="card-title text-primary">Performance Analysis</h6>
+                                  <p className="mb-0">{performanceAnalysis}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Strengths and Improvements Section */}
+                          <div className="row mb-4">
+                            {/* Strengths Column */}
+                            {strengthBullets.length > 0 && (
+                              <div className="col-md-6 mb-3 mb-md-0">
+                                <div className="card shadow-sm h-100">
+                                  <div className="card-body">
+                                    <h6 className="card-title text-success">Strengths</h6>
+                                    <ul className="list-group list-group-flush">
+                                      {strengthBullets.map((bullet, index) => (
+                                        <li key={index} className="list-group-item border-0 ps-0">
+                                          <i className="bi bi-check-circle-fill text-success me-2"></i>
+                                          {bullet}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Improvements Column */}
+                            {improvementBullets.length > 0 && (
+                              <div className="col-md-6">
+                                <div className="card shadow-sm h-100">
+                                  <div className="card-body">
+                                    <h6 className="card-title text-warning">Areas for Improvement</h6>
+                                    <ul className="list-group list-group-flush">
+                                      {improvementBullets.map((bullet, index) => (
+                                        <li key={index} className="list-group-item border-0 ps-0">
+                                          <i className="bi bi-exclamation-triangle-fill text-warning me-2"></i>
+                                          {bullet}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Emotional Analysis Section */}
+                          {emotionalAnalysis && (
+                            <div className="emotional-analysis-section mb-4">
+                              <div className="card shadow-sm">
+                                <div className="card-body">
+                                  <h6 className="card-title text-info">Emotional Analysis</h6>
+                                  
+                                  {/* Display emotional stats if available */}
+                                  {aiFeedback.summary.most_common_emotions_before && aiFeedback.summary.most_common_emotions_before.length > 0 && (
+                                    <div className="emotion-cards mb-3">
+                                      <div className="row">
+                                        {aiFeedback.summary.most_common_emotions_before.map((emotion, index) => {
+                                          const emotionData = aiFeedback.summary.emotion_outcomes && aiFeedback.summary.emotion_outcomes[emotion];
+                                          if (!emotionData) return null;
+                                          
+                                          // Determine color based on win rate difference
+                                          let cardClass = 'bg-light';
+                                          if (emotionData.difference > 5) cardClass = 'bg-success text-white';
+                                          else if (emotionData.difference < -5) cardClass = 'bg-danger text-white';
+                                          else if (emotionData.difference > 0) cardClass = 'bg-success-subtle';
+                                          else if (emotionData.difference < 0) cardClass = 'bg-danger-subtle';
+                                          
+                                          return (
+                                            <div key={index} className="col-md-4 mb-2">
+                                              <div className={`card ${cardClass}`}>
+                                                <div className="card-body p-2 text-center">
+                                                  <h6 className="mb-1">{emotion}</h6>
+                                                  <div className="small">
+                                                    Win rate: {emotionData.win_rate}% 
+                                                    <span className={emotionData.difference > 0 ? 'text-success' : emotionData.difference < 0 ? 'text-danger' : ''}>
+                                                      {emotionData.difference > 0 ? ' (+' : ' ('}
+                                                      {emotionData.difference}%)
+                                                    </span>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  <p className="mb-0">{emotionalAnalysis}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Action Plan Section */}
+                          {actionBullets.length > 0 && (
+                            <div className="action-plan-section mb-4">
+                              <div className="card shadow-sm">
+                                <div className="card-body">
+                                  <h6 className="card-title text-primary">Action Plan</h6>
+                                  <ol className="list-group list-group-flush list-group-numbered">
+                                    {actionBullets.map((bullet, index) => (
+                                      <li key={index} className="list-group-item border-0 ps-0">
+                                        {bullet}
+                                      </li>
+                                    ))}
+                                  </ol>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                  
+                  {/* Areas of Focus (Warning Indicators) */}
+                  <div className="focus-areas-section mb-4">
+                    <div className="card shadow-sm">
+                      <div className="card-body">
+                        <h6 className="mb-3">Areas Needing Attention</h6>
+                        <div className="row">
                           {aiFeedback.summary.risk_exceeded_count > 0 && (
-                            <li className="list-group-item list-group-item-danger">
-                              Risk Management (exceeded {aiFeedback.summary.risk_exceeded_count} times)
-                            </li>
+                            <div className="col-md-4 mb-2">
+                              <div className="alert alert-danger mb-0">
+                                <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                                Risk exceeded {aiFeedback.summary.risk_exceeded_count} times
+                              </div>
+                            </div>
                           )}
+                          
                           {aiFeedback.summary.overtrading_days > 0 && (
-                            <li className="list-group-item list-group-item-warning">
-                              Overtrading ({aiFeedback.summary.overtrading_days} days with 3+ trades)
-                            </li>
+                            <div className="col-md-4 mb-2">
+                              <div className="alert alert-warning mb-0">
+                                <i className="bi bi-graph-up me-2"></i>
+                                Overtrading on {aiFeedback.summary.overtrading_days} days
+                              </div>
+                            </div>
                           )}
+                          
+                          {aiFeedback.summary.profit_factor < 1.2 && aiFeedback.summary.win_rate > 50 && (
+                            <div className="col-md-4 mb-2">
+                              <div className="alert alert-warning mb-0">
+                                <i className="bi bi-bar-chart-fill me-2"></i>
+                                Low profit factor despite good win rate
+                              </div>
+                            </div>
+                          )}
+                          
+                          {aiFeedback.summary.strategy_followed_percentage < 80 && (
+                            <div className="col-md-4 mb-2">
+                              <div className="alert alert-warning mb-0">
+                                <i className="bi bi-check2-square me-2"></i>
+                                Strategy adherence below 80%
+                              </div>
+                            </div>
+                          )}
+                          
                           {aiFeedback.summary.unusual_instruments && aiFeedback.summary.unusual_instruments.length > 0 && (
-                            <li className="list-group-item list-group-item-info">
-                              Trading Unusual Instruments: {aiFeedback.summary.unusual_instruments.join(', ')}
-                            </li>
+                            <div className="col-md-4 mb-2">
+                              <div className="alert alert-info mb-0">
+                                <i className="bi bi-search me-2"></i>
+                                Trading unusual instruments
+                              </div>
+                            </div>
                           )}
-                        </ul>
+                          
+                          {/* Show a positive message if no warnings */}
+                          {!aiFeedback.summary.risk_exceeded_count && 
+                           !aiFeedback.summary.overtrading_days && 
+                           !(aiFeedback.summary.profit_factor < 1.2 && aiFeedback.summary.win_rate > 50) &&
+                           aiFeedback.summary.strategy_followed_percentage >= 80 &&
+                           (!aiFeedback.summary.unusual_instruments || aiFeedback.summary.unusual_instruments.length === 0) && (
+                            <div className="col-12">
+                              <div className="alert alert-success mb-0">
+                                <i className="bi bi-check-circle-fill me-2"></i>
+                                Great job! No major risk or trading pattern concerns detected.
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  )}
+                  </div>
                   
+                  {/* Action Buttons */}
                   <div className="d-flex justify-content-end mt-4">
                     <button 
                       className="btn btn-outline-primary"
                       onClick={() => generateAIFeedback()}
                     >
-                      Regenerate Feedback
+                      <i className="bi bi-arrow-repeat me-2"></i>
+                      Regenerate Analysis
                     </button>
                   </div>
                 </div>
@@ -1100,43 +1326,44 @@ function Dashboard() {
                               // If we have emotion data, use it
                               if (hasEmotionData) {
                                 weeklyReport.summary.most_common_emotions_before.forEach((emotion, index) => {
-                                  if (typeof emotion === 'string') {
-                                    const lowerEmotion = emotion.toLowerCase();
-                                    let emotionType = 'neutral';
-                                    let emotionImpact = '';
-                                    
-                                    // Determine emotion type and impact based on your logic
-                                    if (lowerEmotion.includes('confident')) {
-                                      emotionType = 'positive';
-                                      emotionImpact = winRate > 50 
-                                        ? 'Your confidence led to positive outcomes, showing you trust your analysis and execute with conviction when your edge is present. Continue developing this confidence with setups matching your proven strategy.'
-                                        : 'While you felt confident, the outcomes were mixed. This suggests potentially overconfidence in certain setups. Review these specific trades to refine your pattern recognition.';
-                                    } 
-                                    else if (lowerEmotion.includes('hesitant') || lowerEmotion.includes('anxious') || lowerEmotion.includes('fear')) {
-                                      if (followedStrategy) {
-                                        emotionType = 'caution';
-                                        emotionImpact = riskExceeded
-                                          ? 'You experienced hesitation despite following your strategy. The risk level may be too high for your comfort, leading to emotional pressure. Consider reducing position sizing while maintaining your trading plan.'
-                                          : 'Despite feeling hesitant, you followed your strategy correctly. This is a reasonable response and suggests you need more practice with these setups to build confidence. The losses taken were acceptable within your risk parameters.';
-                                      } else {
-                                        emotionType = 'negative';
-                                        emotionImpact = 'Your hesitation led to deviating from your strategy. This suggests emotional decision-making that should be addressed through practice trades and psychological techniques to stay disciplined.';
-                                      }
-                                    } 
-                                    else {
-                                      emotionType = 'neutral';
-                                      emotionImpact = followedStrategy
-                                        ? 'Your balanced emotional state helped you maintain objectivity and follow your trading plan. This disciplined approach provides reliable baseline performance data for your strategy.'
-                                        : 'While emotionally balanced, there were instances of not following your strategy. Review these trades to understand what caused the deviation despite your neutral emotional state.';
+                                  const emotionData = weeklyReport.summary.emotion_outcomes && weeklyReport.summary.emotion_outcomes[emotion];
+                                  if (!emotionData) return null;
+                                  
+                                  // Determine emotion type and impact based on your logic
+                                  let emotionType = 'neutral';
+                                  let emotionImpact = '';
+                                  
+                                  // Determine emotion type and impact based on your logic
+                                  if (emotion.includes('confident')) {
+                                    emotionType = 'positive';
+                                    emotionImpact = winRate > 50 
+                                      ? 'Your confidence led to positive outcomes, showing you trust your analysis and execute with conviction when your edge is present. Continue developing this confidence with setups matching your proven strategy.'
+                                      : 'While you felt confident, the outcomes were mixed. This suggests potentially overconfidence in certain setups. Review these specific trades to refine your pattern recognition.';
+                                  } 
+                                  else if (emotion.includes('hesitant') || emotion.includes('anxious') || emotion.includes('fear')) {
+                                    if (followedStrategy) {
+                                      emotionType = 'caution';
+                                      emotionImpact = riskExceeded
+                                        ? 'You experienced hesitation despite following your strategy. The risk level may be too high for your comfort, leading to emotional pressure. Consider reducing position sizing while maintaining your trading plan.'
+                                        : 'Despite feeling hesitant, you followed your strategy correctly. This is a reasonable response and suggests you need more practice with these setups to build confidence. The losses taken were acceptable within your risk parameters.';
+                                    } else {
+                                      emotionType = 'negative';
+                                      emotionImpact = 'Your hesitation led to deviating from your strategy. This suggests emotional decision-making that should be addressed through practice trades and psychological techniques to stay disciplined.';
                                     }
-                                    
-                                    emotionCards.push(
-                                      <div key={index} className={`emotion-card ${emotionType}`}>
-                                        <h5>{emotion}</h5>
-                                        <p>{emotionImpact}</p>
-                                      </div>
-                                    );
+                                  } 
+                                  else {
+                                    emotionType = 'neutral';
+                                    emotionImpact = followedStrategy
+                                      ? 'Your balanced emotional state helped you maintain objectivity and follow your trading plan. This disciplined approach provides reliable baseline performance data for your strategy.'
+                                      : 'While emotionally balanced, there were instances of not following your strategy. Review these trades to understand what caused the deviation despite your neutral emotional state.';
                                   }
+                                  
+                                  emotionCards.push(
+                                    <div key={index} className={`emotion-card ${emotionType}`}>
+                                      <h5>{emotion}</h5>
+                                      <p>{emotionImpact}</p>
+                                    </div>
+                                  );
                                 });
                               }
                               

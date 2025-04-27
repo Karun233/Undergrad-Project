@@ -669,7 +669,9 @@ class TradingFeedbackView(APIView):
                 'feeling_before': entry.feeling_before,
                 'feeling_during': entry.feeling_during if hasattr(entry, 'feeling_during') else None,
                 'risk_management': entry.risk_management,
-                'review': entry.review
+                'review': entry.review,
+                'follow_strategy': getattr(entry, 'follow_strategy', True),
+                'risk_reward_ratio': entry.risk_reward_ratio
             })
         
         # Calculate metrics
@@ -681,6 +683,13 @@ class TradingFeedbackView(APIView):
         
         # Calculate average risk-reward ratio
         avg_risk_reward_ratio = statistics.mean(risk_reward_ratios) if risk_reward_ratios else 0
+        
+        # Calculate profit factor
+        profit_factor = total_profit / total_loss if total_loss > 0 else total_profit if total_profit > 0 else 0
+        
+        # Calculate percentage return on account
+        account_size = journal.account_size if hasattr(journal, 'account_size') and journal.account_size else 10000.0
+        account_return_percentage = ((total_profit - total_loss) / float(account_size)) * 100 if account_size else 0
         
         # Find days with multiple trades
         overtrading_days = [date for date, count in daily_trade_counts.items() if count > 2]
@@ -701,6 +710,22 @@ class TradingFeedbackView(APIView):
                 if trade['instrument'] and trade['instrument'] not in common_instruments_set:
                     unusual_instruments.append(trade['instrument'])
         
+        # Count strategy compliance
+        strategy_followed_count = sum(1 for trade in trades if trade.get('follow_strategy', True))
+        strategy_followed_percentage = (strategy_followed_count / total_trades * 100) if total_trades > 0 else 0
+        
+        # Analyze emotion correlations with outcomes
+        emotion_outcomes = {}
+        for emotion in emotions_before:
+            winning_trades = sum(1 for trade in trades if trade.get('feeling_before') == emotion and trade.get('outcome') == 'Win')
+            total_with_emotion = emotions_before[emotion]
+            win_rate_with_emotion = (winning_trades / total_with_emotion * 100) if total_with_emotion > 0 else 0
+            emotion_outcomes[emotion] = {
+                'win_rate': round(win_rate_with_emotion, 2),
+                'count': total_with_emotion,
+                'difference': round(win_rate_with_emotion - win_rate, 2)
+            }
+        
         summary = {
             'total_trades': total_trades,
             'win_count': win_count,
@@ -713,12 +738,18 @@ class TradingFeedbackView(APIView):
             'risk_exceeded_count': risk_exceeded_count,
             'avg_risk': round(avg_risk, 2),
             'avg_risk_reward_ratio': round(avg_risk_reward_ratio, 2),
+            'profit_factor': round(profit_factor, 2),
+            'account_size': float(account_size),
+            'account_return_percentage': round(account_return_percentage, 2),
             'overtrading_days': len(overtrading_days),
             'most_common_instruments': most_common_instruments,
-            'most_common_emotions_before': most_common_emotions_before,
-            'most_common_emotions_during': most_common_emotions_during,
+            'most_common_emotions_before': [item[0] for item in most_common_emotions_before] if most_common_emotions_before else [],
+            'most_common_emotions_during': [item[0] for item in most_common_emotions_during] if most_common_emotions_during else [],
             'max_risk': float(journal.max_risk),
-            'unusual_instruments': unusual_instruments
+            'unusual_instruments': unusual_instruments,
+            'strategy_followed_count': strategy_followed_count,
+            'strategy_followed_percentage': round(strategy_followed_percentage, 2),
+            'emotion_outcomes': emotion_outcomes
         }
         
         return {
@@ -731,33 +762,61 @@ class TradingFeedbackView(APIView):
         summary = trades_data["summary"]
         trades = trades_data["trades"]
         
-        # Count strategy compliance
-        strategy_followed_count = 0
-        if len(trades) >= 5:
-            strategy_followed_count = sum(1 for trade in trades if trade.get('follow_strategy', True))
-        
-        # Create prompt for OpenAI
+        # Create prompt for OpenAI with enhanced analysis criteria
         prompt = f"""
-As a professional trading coach, analyze this trading data and provide feedback in a CONCISE bullet-point format following this exact structure:
+As a professional trading coach, analyze this trading data and provide DETAILED feedback in a well-structured format. Focus on specific relationships between metrics and provide actionable advice.
 
-Trading Summary:
- - Win rate: {summary['win_rate']}%
- - Total trades: {summary['total_trades']}
- - Net P&L: {summary['net_pnl']}
- - Avg. Risk/Reward: {summary['avg_risk_reward_ratio']}
+TRADING STATISTICS:
+- Win rate: {summary['win_rate']}%
+- Total trades: {summary['total_trades']}
+- Net P&L: {summary['net_pnl']}
+- Avg. Risk/Reward: {summary['avg_risk_reward_ratio']}
+- Profit Factor: {summary['profit_factor']}
+- Account Size: ${summary['account_size']}
+- Account Return: {summary['account_return_percentage']}%
+- Max Risk Setting: {summary['max_risk']}%
+- Strategy Adherence: {summary['strategy_followed_percentage']}%
 
-Key Strengths:
- -
-Areas for Improvement:
- -
-Action Plan:
- - (max 5 bullets)
+EMOTIONAL PATTERNS:
+{', '.join([f"'{emotion}'" for emotion in summary['most_common_emotions_before']])}
+
+FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
+
+## Performance Analysis
+
+[Provide an overall assessment of the trading performance, with specific focus on the relationships between win rate, risk-reward ratio, and account growth. Address any imbalances in these metrics.]
+
+## Strengths
+
+- [List 2-3 specific strengths based on the metrics]
+
+## Areas for Improvement
+
+- [List 2-3 specific areas that need improvement]
+
+## Emotional Analysis
+
+[Analyze how emotions are impacting trading performance. Identify patterns between emotions and outcomes. For example, if trader feels 'hesitant' but followed their strategy, explain what this means for their development. If trader feels 'confident' but has mixed results, explain what this suggests about their self-assessment.]
+
+## Action Plan
+
+1. [Specific actionable step based on win rate and risk-reward relationship]
+2. [Specific actionable step based on emotional patterns]
+3. [Specific actionable step for overall improvement]
+4. [Optional additional step]
+
+SPECIFIC GUIDANCE:
+- If win rate is high (>60%) but risk-reward is low (<1.5), suggest increasing risk-reward targets while maintaining strategy.
+- If win rate is low (<40%) but risk-reward is high (>2.0) and account is profitable, acknowledge this is a valid approach but suggest minor refinements.
+- Address emotional impacts directly - explain how specific emotions are affecting trading outcomes.
+- Suggest specific position sizing adjustments if needed based on account size and risk.
+- Keep the analysis focused and actionable.
 """
         try:
             feedback = _call_openai_chat(
                 messages=[{"role": "user", "content": prompt}],
                 model="gpt-4o-mini" if hasattr(__import__('openai'), 'OpenAI') else "gpt-4-0125-preview",
-                max_tokens=1000,
+                max_tokens=1200,
                 temperature=0.7,
             )
             return feedback
@@ -769,33 +828,6 @@ Action Plan:
                 f"Win rate: {summary['win_rate']}%, Total trades: {summary['total_trades']}, Net P&L: {summary['net_pnl']}. "
                 "Please try again later."
             )
-
-def _call_openai_chat(*, messages, model="gpt-3.5-turbo", max_tokens=700, temperature=0.7):
-    """Call the OpenAI chat completion endpoint supporting both old (<1.0) and new (>=1.0) SDK versions."""
-    import openai  # local import to avoid dependency issues at module load
-    try:
-        # If the new client style exists (openai.OpenAI), use it
-        if hasattr(openai, "OpenAI"):
-            client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
-            response = client.chat.completions.create(
-                model=model,
-                messages=messages,
-                max_tokens=max_tokens,
-                temperature=temperature,
-            )
-            return response.choices[0].message.content.strip()
-        # Fallback to legacy style
-        openai.api_key = settings.OPENAI_API_KEY  # noqa
-        response = openai.ChatCompletion.create(
-            model=model,
-            messages=messages,
-            max_tokens=max_tokens,
-            temperature=temperature,
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as exc:
-        # Reraise so calling code can catch and handle/log gracefully
-        raise exc
 
 class WeeklyReportView(APIView):
     """Generate a condensed weekly trading report with AI performance review"""
@@ -1063,3 +1095,30 @@ class MilestoneRecalculateView(APIView):
         updated_milestones = Milestone.objects.filter(journal=journal)
         serializer = MilestoneSerializer(updated_milestones, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+def _call_openai_chat(*, messages, model="gpt-3.5-turbo", max_tokens=700, temperature=0.7):
+    """Call the OpenAI chat completion endpoint supporting both old (<1.0) and new (>=1.0) SDK versions."""
+    import openai  # local import to avoid dependency issues at module load
+    try:
+        # If the new client style exists (openai.OpenAI), use it
+        if hasattr(openai, "OpenAI"):
+            client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+            response = client.chat.completions.create(
+                model=model,
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
+            return response.choices[0].message.content.strip()
+        # Fallback to legacy style
+        openai.api_key = settings.OPENAI_API_KEY  # noqa
+        response = openai.ChatCompletion.create(
+            model=model,
+            messages=messages,
+            max_tokens=max_tokens,
+            temperature=temperature,
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as exc:
+        # Reraise so calling code can catch and handle/log gracefully
+        raise exc
