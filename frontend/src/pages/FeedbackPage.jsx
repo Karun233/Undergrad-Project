@@ -3,7 +3,6 @@ import { useParams } from "react-router-dom";
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import { ACCESS_TOKEN } from "../constants";
-import MonteCarloSimulation from '../components/MonteCarloSimulation';
 import Plot from 'react-plotly.js';
 import '../styles/WeeklyReport.scss';
 
@@ -1230,13 +1229,6 @@ function Dashboard() {
             </div>
           )}
         </div>
-        
-        {/* Monte Carlo Simulation Section */}
-        <MonteCarloSimulation 
-          tradeReturns={entries.map(e => parseFloat(e.profit_loss) / 100)} 
-          initialBalance={10000} 
-          numSimulations={1000} 
-        />
         
         {/* Weekly Report Modal */}
         {showWeeklyModal && (

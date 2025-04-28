@@ -798,18 +798,10 @@ FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
 
 [Analyze how emotions are impacting trading performance. Identify patterns between emotions and outcomes. For example, if trader feels 'hesitant' but followed their strategy, explain what this means for their development. If trader feels 'confident' but has mixed results, explain what this suggests about their self-assessment.]
 
-## Action Plan
-
-1. [Specific actionable step based on win rate and risk-reward relationship]
-2. [Specific actionable step based on emotional patterns]
-3. [Specific actionable step for overall improvement]
-4. [Optional additional step]
-
 SPECIFIC GUIDANCE:
 - If win rate is high (>60%) but risk-reward is low (<1.5), suggest increasing risk-reward targets while maintaining strategy.
 - If win rate is low (<40%) but risk-reward is high (>2.0) and account is profitable, acknowledge this is a valid approach but suggest minor refinements.
 - Address emotional impacts directly - explain how specific emotions are affecting trading outcomes.
-- Suggest specific position sizing adjustments if needed based on account size and risk.
 - Keep the analysis focused and actionable.
 """
         try:
