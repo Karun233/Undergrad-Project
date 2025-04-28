@@ -138,3 +138,67 @@ class Milestone(models.Model):
         # Only save if there's an actual change
         if old_completed != self.completed or self._state.adding:
             self.save()
+
+# Community Feature Models
+class CommunityPost(models.Model):
+    RATING_CHOICES = [
+        (1, '1 - Poor'),
+        (2, '2 - Fair'),
+        (3, '3 - Good'),
+        (4, '4 - Very Good'),
+        (5, '5 - Excellent'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='community_posts')
+    journal_entry = models.ForeignKey(JournalEntry, on_delete=models.CASCADE, related_name='community_posts')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    average_rating = models.DecimalField(max_digits=3, decimal_places=2, default=0)
+    rating_count = models.IntegerField(default=0)
+    comment_count = models.IntegerField(default=0)
+    
+    class Meta:
+        # Ensure a user can only share a specific journal entry once
+        unique_together = ('user', 'journal_entry')
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Post by {self.user.username} - {self.title}"
+    
+    def update_average_rating(self):
+        """Calculate and update the average rating for this post"""
+        ratings = PostRating.objects.filter(post=self)
+        if ratings.exists():
+            avg = ratings.aggregate(avg=models.Avg('rating'))['avg']
+            self.average_rating = round(avg, 2)
+            self.rating_count = ratings.count()
+        else:
+            self.average_rating = 0
+            self.rating_count = 0
+        self.save(update_fields=['average_rating', 'rating_count'])
+
+class Comment(models.Model):
+    post = models.ForeignKey(CommunityPost, on_delete=models.CASCADE, related_name='comments')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='community_comments')
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['created_at']
+    
+    def __str__(self):
+        return f"Comment by {self.user.username} on {self.post.title}"
+        
+class PostRating(models.Model):
+    post = models.ForeignKey(CommunityPost, on_delete=models.CASCADE, related_name='ratings')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='community_ratings')
+    rating = models.IntegerField(choices=CommunityPost.RATING_CHOICES)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        # Ensure a user can only rate a specific post once
+        unique_together = ('user', 'post')
+    
+    def __str__(self):
+        return f"Rating of {self.rating} by {self.user.username} on {self.post.title}"

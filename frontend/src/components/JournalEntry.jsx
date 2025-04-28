@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Select from 'react-select';
+import ShareTradeModal from './ShareTradeModal';
 
 // Helper to format date as 'Tuesday, 11th April 2025'
 function formatDate(dateString) {
@@ -35,6 +36,8 @@ function JournalEntries({ journalId }) {
     feeling_during: [],
     additional_comments: '',
   });
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState(null);
 
   // Predefined feelings
   const predefinedFeelings = [
@@ -96,6 +99,18 @@ function JournalEntries({ journalId }) {
     } catch (error) {
       console.error('Error adding entry:', error);
     }
+  };
+
+  // Handle opening share modal
+  const handleOpenShareModal = (entry) => {
+    setSelectedEntry(entry);
+    setShareModalOpen(true);
+  };
+
+  // Handle closing share modal
+  const handleCloseShareModal = () => {
+    setShareModalOpen(false);
+    setSelectedEntry(null);
   };
 
   return (
@@ -220,6 +235,24 @@ function JournalEntries({ journalId }) {
         </div>
       </div>
 
+      {/* Share Trade Modal */}
+      {selectedEntry && (
+        <ShareTradeModal
+          open={shareModalOpen}
+          onClose={handleCloseShareModal}
+          journalId={journalId}
+          entryId={selectedEntry.id}
+          entryData={{
+            instrument: selectedEntry.instrument,
+            direction: selectedEntry.direction,
+            outcome: selectedEntry.outcome,
+            date: formatDate(selectedEntry.date),
+            profit_loss: selectedEntry.profit_loss,
+            risk_reward: selectedEntry.risk_reward_ratio
+          }}
+        />
+      )}
+
       {/* Table for displaying entries */}
       {error ? <p>{error}</p> : null}
       {entries.length === 0 ? (
@@ -301,6 +334,14 @@ function JournalEntries({ journalId }) {
                     )}
                   </td>
                   <td>
+                    {/* Add Share button alongside Edit/Delete actions */}
+                    <button
+                      className="btn btn-outline-primary btn-sm me-1"
+                      onClick={() => handleOpenShareModal(entry)}
+                      title="Share to Community"
+                    >
+                      <i className="bi bi-share"></i> Share
+                    </button>
                     {/* Placeholder for Edit/Delete actions if implemented */}
                   </td>
                 </tr>

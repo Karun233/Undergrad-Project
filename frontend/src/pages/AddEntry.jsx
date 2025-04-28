@@ -6,6 +6,7 @@ import { OverlayTrigger, Tooltip } from 'react-bootstrap';
 // Import your token constants
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
 import Navbar from '../components/Navbar';
+import ShareTradeModal from '../components/ShareTradeModal';
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
@@ -177,6 +178,10 @@ const tableStyles = `
   
   .action-button.view {
     color: #5f3dc4;
+  }
+  
+  .action-button.share {
+    color: #03a9f4;
   }
   
   /* Entry detail modal */
@@ -646,6 +651,8 @@ function AddEntry() {
   const [showImageModal, setShowImageModal] = useState(false); // State for image modal visibility
   const [selectedImageUrl, setSelectedImageUrl] = useState(null); // Track the selected image URL
   const [detailEntry, setDetailEntry] = useState(null); // Track the entry being viewed in detail
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [entryToShare, setEntryToShare] = useState(null);
 
   const [formData, setFormData] = useState({
     date: '',
@@ -1152,6 +1159,18 @@ function AddEntry() {
     setDetailEntry(null);
   };
 
+  // Handle opening share modal
+  const handleOpenShareModal = (entry) => {
+    setEntryToShare(entry);
+    setShareModalOpen(true);
+  };
+
+  // Handle closing share modal
+  const handleCloseShareModal = () => {
+    setShareModalOpen(false);
+    setEntryToShare(null);
+  };
+
   return (
     <div className="container-fluid mt-4">
       <Navbar />
@@ -1324,6 +1343,12 @@ function AddEntry() {
                                 onClick={() => handleViewDetail(entry)}
                               >
                                 View
+                              </button>
+                              <button
+                                className="action-button share"
+                                onClick={() => handleOpenShareModal(entry)}
+                              >
+                                Share
                               </button>
                             </div>
                           </td>
@@ -1883,6 +1908,24 @@ function AddEntry() {
             </div>
           </div>
         </div>
+      )}
+      
+      {/* Share Trade Modal */}
+      {entryToShare && (
+        <ShareTradeModal
+          open={shareModalOpen}
+          onClose={handleCloseShareModal}
+          journalId={id}
+          entryId={entryToShare.id}
+          entryData={{
+            instrument: entryToShare.instrument,
+            direction: entryToShare.direction,
+            outcome: entryToShare.outcome,
+            date: formatDate(entryToShare.date),
+            profit_loss: entryToShare.profit_loss,
+            risk_reward: entryToShare.risk_reward_ratio
+          }}
+        />
       )}
       <style>{tableStyles}</style>
     </div>

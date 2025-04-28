@@ -1,23 +1,13 @@
 from django.shortcuts import render
 from django.contrib.auth.models import User
 from rest_framework import generics
-from .serializers import UserSerializer, JournalSerializer, JournalEntrySerializer, EntryImageSerializer, UserProfileSerializer, UserProfileDetailSerializer, MilestoneSerializer
+from .serializers import UserSerializer, JournalSerializer, JournalEntrySerializer, EntryImageSerializer, UserProfileSerializer, UserProfileDetailSerializer, MilestoneSerializer, CommunityPostListSerializer, CommunityPostDetailSerializer, CommunityPostCreateSerializer, CommentSerializer, PostRatingSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .models import Journal, JournalEntry, EntryImage, UserProfile, Milestone
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from .models import Journal, JournalEntry, EntryImage, UserProfile, Milestone, CommunityPost, Comment, PostRating
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-import os
-from django.conf import settings
-from django.contrib.auth import authenticate
-from rest_framework.parsers import MultiPartParser, FormParser
-import openai
-from django.conf import settings
-import statistics
-from collections import Counter
-from datetime import datetime
-from datetime import timedelta
 
 # User creation view
 class CreateUserView(generics.CreateAPIView):
@@ -580,11 +570,10 @@ class TradingFeedbackView(APIView):
                 })
                 
             # Extract data for analysis
-            trades_data = self._prepare_trades_data(entries, journal)
-            
-            # Generate AI feedback
+            trading_helper = TradingFeedbackView()
+            trades_data = trading_helper._prepare_trades_data(entries, journal)
             feedback = self._generate_ai_feedback(trades_data)
-            
+
             return Response({
                 "feedback": feedback,
                 "has_enough_data": True,
@@ -1114,3 +1103,335 @@ def _call_openai_chat(*, messages, model="gpt-3.5-turbo", max_tokens=700, temper
     except Exception as exc:
         # Reraise so calling code can catch and handle/log gracefully
         raise exc
+
+# Community Feature Views
+class CommunityPostListView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """List all community posts with optional filtering"""
+        try:
+            # Get filters from query parameters
+            instrument = request.query_params.get('instrument', None)
+            outcome = request.query_params.get('outcome', None)
+            direction = request.query_params.get('direction', None)
+            
+            # Start with all posts
+            posts = CommunityPost.objects.all().order_by('-created_at')
+            
+            # Apply filters if they exist
+            if instrument:
+                posts = posts.filter(journal_entry__instrument__icontains=instrument)
+            if outcome:
+                posts = posts.filter(journal_entry__outcome=outcome)
+            if direction:
+                posts = posts.filter(journal_entry__direction=direction)
+            
+            # Create response data manually to ensure consistency
+            response_data = []
+            for post in posts:
+                post_data = {
+                    'id': post.id,
+                    'username': post.user.username,
+                    'title': post.title,
+                    'description': post.description,
+                    'created_at': post.created_at.isoformat(),
+                    'average_rating': float(post.average_rating) if post.average_rating else 0,
+                    'rating_count': post.rating_count,
+                    'comment_count': post.comment_count,
+                    'entry_data': {}
+                }
+                
+                # Add entry data if available
+                entry = post.journal_entry
+                if entry:
+                    # Format date to include day name as per user preference
+                    date_str = entry.date.strftime("%A, %d %B %Y") if entry and entry.date else ""
+                    
+                    post_data['entry_data'] = {
+                        'instrument': entry.instrument,
+                        'direction': entry.direction,
+                        'outcome': entry.outcome,
+                        'date': date_str,
+                        'profit_loss': entry.profit_loss,
+                        'risk_reward_ratio': entry.risk_reward_ratio
+                    }
+                
+                response_data.append(post_data)
+            
+            return Response(response_data)
+        except Exception as e:
+            print(f"Error fetching community posts: {str(e)}")
+            return Response({"error": "Failed to load community posts"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class UserPostsView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """List all posts created by the current user"""
+        try:
+            posts = CommunityPost.objects.filter(user=request.user).order_by('-created_at')
+            
+            # Create response data manually to ensure consistency
+            response_data = []
+            for post in posts:
+                post_data = {
+                    'id': post.id,
+                    'username': post.user.username,
+                    'title': post.title,
+                    'description': post.description,
+                    'created_at': post.created_at.isoformat(),
+                    'average_rating': float(post.average_rating) if post.average_rating else 0,
+                    'rating_count': post.rating_count,
+                    'comment_count': post.comment_count,
+                    'entry_data': {}
+                }
+                
+                # Add entry data if available
+                entry = post.journal_entry
+                if entry:
+                    # Format date to include day name as per user preference
+                    date_str = entry.date.strftime("%A, %d %B %Y") if entry and entry.date else ""
+                    
+                    post_data['entry_data'] = {
+                        'instrument': entry.instrument,
+                        'direction': entry.direction,
+                        'outcome': entry.outcome,
+                        'date': date_str,
+                        'profit_loss': entry.profit_loss,
+                        'risk_reward_ratio': entry.risk_reward_ratio
+                    }
+                
+                response_data.append(post_data)
+            
+            return Response(response_data)
+        except Exception as e:
+            print(f"Error fetching user posts: {str(e)}")
+            return Response({"error": "Failed to load your posts"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class CommunityPostDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, post_id):
+        """Get detailed view of a specific community post"""
+        try:
+            # Get the post with prefetched related data to avoid N+1 queries
+            post = CommunityPost.objects.get(id=post_id)
+            
+            # Get comments manually to avoid serializer issues
+            comments = Comment.objects.filter(post=post).order_by('-created_at')
+            comment_data = []
+            for comment in comments:
+                try:
+                    comment_data.append({
+                        'id': comment.id,
+                        'content': comment.content,
+                        'created_at': comment.created_at.isoformat(),
+                        'username': comment.user.username if comment.user else 'Anonymous'
+                    })
+                except Exception as e:
+                    print(f"Error processing comment {comment.id}: {str(e)}")
+            
+            # Get entry data manually
+            entry = post.journal_entry
+            entry_data = {}
+            if entry:
+                try:
+                    # Format the date to include the day name as per user preference
+                    date_str = entry.date.strftime("%A, %d %B %Y") if entry and entry.date else ""
+                    
+                    # Get values and handle nulls
+                    risk_reward = entry.risk_reward_ratio if hasattr(entry, 'risk_reward_ratio') else None
+                    profit_loss = entry.profit_loss if hasattr(entry, 'profit_loss') else None
+                    
+                    entry_data = {
+                        'date': date_str,
+                        'instrument': entry.instrument or "",
+                        'direction': entry.direction or "",
+                        'outcome': entry.outcome or "",
+                        'risk_management': entry.risk_management or "",
+                        'feeling_before': entry.feeling_before or "",
+                        'feeling_during': entry.feeling_during or "",
+                        'follow_strategy': entry.follow_strategy or "",
+                        'risk_reward_ratio': str(risk_reward) if risk_reward is not None else "",
+                        'profit_loss': str(profit_loss) if profit_loss is not None else "",
+                        'review': entry.review or "",
+                        'review_rating': entry.review_rating or 0
+                    }
+                except Exception as e:
+                    print(f"Error processing entry data: {str(e)}")
+            
+            # Get image data manually
+            entry_images = []
+            if entry:
+                try:
+                    images = EntryImage.objects.filter(journal_entry=entry)
+                    for image in images:
+                        if image.image:
+                            try:
+                                image_url = request.build_absolute_uri(image.image.url)
+                                entry_images.append({
+                                    'id': image.id,
+                                    'url': image_url,
+                                    'description': image.description or ''
+                                })
+                            except Exception as e:
+                                print(f"Error processing image {image.id}: {str(e)}")
+                except Exception as e:
+                    print(f"Error processing images: {str(e)}")
+            
+            # Convert Decimal to float for JSON serialization
+            try:
+                average_rating = float(post.average_rating) if post.average_rating is not None else 0.0
+            except (TypeError, ValueError):
+                average_rating = 0.0
+            
+            # Construct the response data manually
+            response_data = {
+                'id': post.id,
+                'username': post.user.username if post.user else 'Anonymous',
+                'title': post.title or "",
+                'description': post.description or "",
+                'created_at': post.created_at.isoformat(),
+                'average_rating': average_rating,
+                'rating_count': post.rating_count or 0,
+                'comment_count': post.comment_count or 0,
+                'comments': comment_data,
+                'entry_data': entry_data,
+                'entry_images': entry_images
+            }
+            
+            return Response(response_data)
+        except CommunityPost.DoesNotExist:
+            return Response({"error": "Post not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            print(f"Error fetching post details for post {post_id}: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return Response({"error": f"Failed to load post details: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class CreateCommentView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, post_id):
+        """Add a comment to a community post"""
+        try:
+            # Get the post
+            post = CommunityPost.objects.get(id=post_id)
+            
+            # Get comment content
+            content = request.data.get('content', '').strip()
+            if not content:
+                return Response({"error": "Comment content cannot be empty"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Create the comment
+            comment = Comment.objects.create(
+                post=post,
+                user=request.user,
+                content=content
+            )
+            
+            # Update the comment count
+            post.comment_count = Comment.objects.filter(post=post).count()
+            post.save(update_fields=['comment_count'])
+            
+            # Return the comment
+            serializer = CommentSerializer(comment)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            
+        except CommunityPost.DoesNotExist:
+            return Response({"error": "Post not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            print(f"Error creating comment: {str(e)}")
+            return Response({"error": f"Failed to create comment: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class RatePostView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, post_id):
+        """Rate a community post"""
+        try:
+            post = CommunityPost.objects.get(id=post_id)
+        except CommunityPost.DoesNotExist:
+            return Response({"error": "Post not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Validate the rating
+        rating = request.data.get('rating')
+        if not rating or int(rating) < 1 or int(rating) > 5:
+            return Response(
+                {"error": "Rating must be between 1 and 5"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Create or update the rating
+        rating_obj, created = PostRating.objects.update_or_create(
+            post=post,
+            user=request.user,
+            defaults={'rating': rating}
+        )
+        
+        # Update average rating on the post
+        post.update_average_rating()
+        
+        return Response(PostRatingSerializer(rating_obj).data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+class DeleteCommunityPostView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def delete(self, request, post_id):
+        """Delete a community post (only if the user is the creator)"""
+        try:
+            post = CommunityPost.objects.get(id=post_id, user=request.user)
+            post.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except CommunityPost.DoesNotExist:
+            return Response(
+                {"error": "Post not found or you don't have permission to delete it"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+class ShareJournalEntryView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, journal_id, entry_id):
+        """Share a journal entry to the community"""
+        try:
+            # Check if the journal exists and belongs to the current user
+            journal = Journal.objects.get(id=journal_id, owner=request.user)
+            # Check if the entry exists and belongs to the journal
+            entry = JournalEntry.objects.get(id=entry_id, journal=journal)
+        except Journal.DoesNotExist:
+            return Response({"error": "Journal not found"}, status=status.HTTP_404_NOT_FOUND)
+        except JournalEntry.DoesNotExist:
+            return Response({"error": "Journal entry not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Check if this entry has already been shared
+        if CommunityPost.objects.filter(user=request.user, journal_entry=entry).exists():
+            return Response(
+                {"error": "This journal entry has already been shared to the community"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Create a default title if not provided
+        title = request.data.get('title', '').strip()
+        if not title:
+            title = f"{entry.instrument} {entry.direction} Trade - {entry.outcome}"
+            
+        # Create a default description if not provided
+        description = request.data.get('description', '').strip()
+        if not description:
+            description = f"Trade details: {entry.instrument} {entry.direction} trade with {entry.outcome} outcome."
+        
+        # Create the community post directly
+        post = CommunityPost.objects.create(
+            user=request.user,
+            journal_entry=entry,
+            title=title,
+            description=description
+        )
+        
+        # Return a simple success response
+        return Response({
+            "message": "Trade shared successfully",
+            "post_id": post.id
+        }, status=status.HTTP_201_CREATED)

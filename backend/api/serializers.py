@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
-from .models import Journal, JournalEntry, EntryImage, Milestone
+from .models import Journal, JournalEntry, EntryImage, Milestone, CommunityPost, Comment, PostRating
 import json
 from .models import UserProfile
 
@@ -132,3 +132,120 @@ class MilestoneSerializer(serializers.ModelSerializer):
         if obj.target == 0:
             return 0
         return min(100, int((obj.current_progress / obj.target) * 100))
+
+# Community serializers
+class CommentSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    
+    class Meta:
+        model = Comment
+        fields = ['id', 'post', 'user', 'username', 'content', 'created_at']
+        read_only_fields = ['id', 'created_at', 'username']
+        extra_kwargs = {'user': {'write_only': True}}
+
+class PostRatingSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    
+    class Meta:
+        model = PostRating
+        fields = ['id', 'post', 'user', 'username', 'rating', 'created_at']
+        read_only_fields = ['id', 'created_at', 'username']
+        extra_kwargs = {'user': {'write_only': True}}
+
+class CommunityPostListSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    instrument = serializers.CharField(source='journal_entry.instrument', read_only=True)
+    direction = serializers.CharField(source='journal_entry.direction', read_only=True)
+    outcome = serializers.CharField(source='journal_entry.outcome', read_only=True)
+    date = serializers.DateField(source='journal_entry.date', read_only=True)
+    
+    class Meta:
+        model = CommunityPost
+        fields = [
+            'id', 'username', 'title', 'description', 'created_at', 
+            'average_rating', 'rating_count', 'comment_count',
+            'instrument', 'direction', 'outcome', 'date'
+        ]
+        read_only_fields = ['id', 'created_at', 'average_rating', 'rating_count', 'comment_count']
+
+class CommunityPostDetailSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    comments = serializers.SerializerMethodField()
+    entry_data = serializers.SerializerMethodField()
+    entry_images = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = CommunityPost
+        fields = [
+            'id', 'username', 'title', 'description', 'created_at', 
+            'average_rating', 'rating_count', 'comment_count',
+            'comments', 'entry_data', 'entry_images'
+        ]
+        read_only_fields = ['id', 'created_at', 'average_rating', 'rating_count', 'comment_count']
+    
+    def get_comments(self, obj):
+        """Get all comments for this post"""
+        comments = Comment.objects.filter(post=obj).order_by('-created_at')
+        return CommentSerializer(comments, many=True).data
+        
+    def get_entry_data(self, obj):
+        """Return selected fields from the journal entry for display"""
+        entry = obj.journal_entry
+        # Format the date to include the day name as per user preference
+        date_str = entry.date.strftime("%A, %d %B %Y") if entry and entry.date else ""
+        
+        if not entry:
+            return {}
+            
+        entry_data = {
+            'date': date_str,
+            'instrument': entry.instrument,
+            'direction': entry.direction,
+            'outcome': entry.outcome,
+            'risk_management': entry.risk_management,
+            'feeling_before': entry.feeling_before,
+            'feeling_during': entry.feeling_during,
+            'follow_strategy': entry.follow_strategy,
+            'risk_reward_ratio': entry.risk_reward_ratio,
+            'profit_loss': entry.profit_loss,
+            'review': entry.review,
+            'review_rating': entry.review_rating
+        }
+        return entry_data
+    
+    def get_entry_images(self, obj):
+        """Return all images associated with the journal entry"""
+        entry = obj.journal_entry
+        if not entry:
+            return []
+            
+        images = EntryImage.objects.filter(journal_entry=entry)
+        
+        # Create a list of image URLs
+        image_urls = []
+        for image in images:
+            try:
+                request = self.context.get('request')
+                if request and image.image:
+                    image_url = request.build_absolute_uri(image.image.url)
+                    image_urls.append({
+                        'id': image.id,
+                        'url': image_url,
+                        'description': image.description or ''
+                    })
+            except Exception as e:
+                print(f"Error processing image {image.id}: {str(e)}")
+        
+        return image_urls
+
+class CommunityPostCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommunityPost
+        fields = ['id', 'journal_entry', 'title', 'description']
+        read_only_fields = ['id']
+        
+    def create(self, validated_data):
+        # Set the user from the request context
+        user = self.context['request'].user
+        validated_data['user'] = user
+        return super().create(validated_data)

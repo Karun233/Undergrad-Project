@@ -53,6 +53,14 @@ function Navbar() {
               </li>
               <li className="navbar-item">
                 <Link 
+                  to={`/community`} 
+                  className={`navbar-link ${path.includes('/community') ? 'active' : ''}`}
+                >
+                  Community
+                </Link>
+              </li>
+              <li className="navbar-item">
+                <Link 
                   to={`/journal/${journalId}/profile`} 
                   className={`navbar-link ${path.includes('/profile') ? 'active' : ''}`}
                 >
