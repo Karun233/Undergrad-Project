@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
-
+import { getFullImageUrl } from '../utils/imageUtils';
 const API_BASE_URL = 'http://localhost:8000/api';
 
 function Profile() {
@@ -248,7 +248,7 @@ function Profile() {
                 <div className="mb-3">
                   {userData.profile_picture ? (
                     <img 
-                      src={userData.profile_picture} 
+                      src={getFullImageUrl(userData.profile_picture)} 
                       alt="Profile" 
                       className="rounded-circle img-fluid" 
                       style={{ width: '150px', height: '150px', objectFit: 'cover' }} 

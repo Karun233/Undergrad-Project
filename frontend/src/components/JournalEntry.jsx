@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Select from 'react-select';
+import { getFullImageUrl } from '../utils/imageUtils';
 
 // Helper to format date as 'Tuesday, 11th April 2025'
 function formatDate(dateString) {
@@ -268,7 +269,7 @@ function JournalEntries({ journalId }) {
                         {entry.images.slice(0, 2).map((image, idx) => (
                           <img 
                             key={idx}
-                            src={image}
+                            src={getFullImageUrl(image)}
                             alt={`Trade image ${idx + 1}`}
                             style={{ 
                               width: '40px', 

@@ -6,6 +6,7 @@ import { OverlayTrigger, Tooltip } from 'react-bootstrap';
 // Import your token constants
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
 import Navbar from '../components/Navbar';
+import { getFullImageUrl } from '../utils/imageUtils';
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
@@ -471,7 +472,7 @@ const ImageModal = ({ imageUrl, isOpen, onClose }) => {
         &times;
       </div>
       <img
-        src={imageUrl}
+        src={getFullImageUrl(imageUrl)}
         alt="Trade detail"
         style={{
           maxWidth: '90%',
@@ -584,7 +585,7 @@ const ImageUploader = ({ images, onImagesChange }) => {
             style={{ position: 'relative' }}
           >
             <img 
-              src={typeof image === 'string' ? image : URL.createObjectURL(image)} 
+              src={typeof image === 'string' ? getFullImageUrl(image) : URL.createObjectURL(image)}
               alt={`Preview ${index}`}
               className="image-preview"
               style={{ 
@@ -1272,7 +1273,7 @@ function AddEntry() {
                                 {entry.images.slice(0, 2).map((image, idx) => (
                                   <img 
                                     key={idx}
-                                    src={image}
+                                    src={getFullImageUrl(image)}
                                     alt={`Trade image ${idx + 1}`}
                                     style={{ 
                                       width: '40px', 
@@ -1854,7 +1855,7 @@ function AddEntry() {
                   {detailEntry.images.map((image, idx) => (
                     <img 
                       key={idx}
-                      src={image}
+                      src={getFullImageUrl(image)}
                       alt={`Trade image ${idx + 1}`}
                       className="entry-detail-image"
                       onClick={(e) => handleImageClick(image, e)}

@@ -18,6 +18,7 @@ import statistics
 from collections import Counter
 from datetime import datetime
 from datetime import timedelta
+import json
 
 # User creation view
 class CreateUserView(generics.CreateAPIView):
@@ -297,24 +298,41 @@ class EntryImageUploadView(APIView):
         except JournalEntry.DoesNotExist:
             return Response({"error": "Entry not found"}, status=status.HTTP_404_NOT_FOUND)
         
-        images = request.FILES.getlist('images')
-        image_data = []
-        
-        for image in images:
-            image_instance = EntryImage.objects.create(entry=entry, image=image)
-            image_data.append({
-                'id': image_instance.id,
-                'image': image_instance.image.url
-            })
+        # Initialize images list if it doesn't exist
+        if entry.images is None:
+            entry.images = []
             
-            # Add image path to entry.images list
-            if image_instance.image.url not in entry.images:
-                entry.images.append(image_instance.image.url)
+        # Process new image uploads (image0, image1, etc.)
+        image_data = []
+        for key, image in request.FILES.items():
+            if key.startswith('image'):
+                image_instance = EntryImage.objects.create(entry=entry, image=image)
+                image_url = image_instance.image.url
+                image_data.append({
+                    'id': image_instance.id,
+                    'image': image_url
+                })
+                
+                # Add image path to entry.images list if not already there
+                if image_url not in entry.images:
+                    entry.images.append(image_url)
         
-        entry.save()
+        # Handle existing images if provided
+        if 'existing_images' in request.data:
+            try:
+                existing_images = json.loads(request.data['existing_images'])
+                # Ensure entry.images contains all existing images
+                for url in existing_images:
+                    if url not in entry.images:
+                        entry.images.append(url)
+            except json.JSONDecodeError:
+                pass  # Ignore if JSON parsing fails
+        
+        # Make sure to save the entry to persist the images array
+        entry.save(update_fields=['images'])
         
         return Response(image_data, status=status.HTTP_201_CREATED)
-    
+
 class JournalEntryDeleteView(APIView):
     permission_classes = [IsAuthenticated]
 
