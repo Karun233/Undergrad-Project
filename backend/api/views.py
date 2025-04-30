@@ -1167,6 +1167,76 @@ class CommunityEntryListView(generics.ListAPIView):
             
         return Response(entries_data)
 
+class UserCommunityEntriesView(APIView):
+    """View to list all community entries shared by the current user"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        from .models import CommunityEntry
+        
+        # Get all journals owned by the user
+        user_journals = Journal.objects.filter(owner=request.user)
+        
+        # Get all community entries that originated from the user's journals
+        user_community_entries = CommunityEntry.objects.filter(
+            original_journal__in=user_journals
+        ).order_by('-shared_at')
+        
+        # Serialize data manually for customization
+        entries_data = []
+        for entry in user_community_entries:
+            entry_data = {
+                'id': entry.id,
+                'date': entry.date,
+                'instrument': entry.instrument,
+                'direction': entry.direction,
+                'outcome': entry.outcome,
+                'risk_reward_ratio': entry.risk_reward_ratio,
+                'profit_loss': entry.profit_loss,
+                'risk_percent': entry.risk_percent,
+                'feeling_before': entry.feeling_before,
+                'confidence_before': entry.confidence_before,
+                'feeling_during': entry.feeling_during,
+                'confidence_during': entry.confidence_during,
+                'review': entry.review,
+                'review_rating': entry.review_rating,
+                'images': entry.images,
+                'shared_at': entry.shared_at,
+                'original_entry_id': entry.original_entry.id,
+                'original_journal_id': entry.original_journal.id
+            }
+            entries_data.append(entry_data)
+            
+        return Response(entries_data)
+
+class DeleteCommunityEntryView(APIView):
+    """View to delete a community entry shared by the current user"""
+    permission_classes = [IsAuthenticated]
+    
+    def delete(self, request, entry_id):
+        from .models import CommunityEntry
+        
+        try:
+            # Get all journals owned by the user
+            user_journals = Journal.objects.filter(owner=request.user)
+            
+            # Try to get the community entry that belongs to the user
+            community_entry = CommunityEntry.objects.get(
+                id=entry_id,
+                original_journal__in=user_journals
+            )
+            
+            # Delete the community entry
+            community_entry.delete()
+            
+            return Response({'message': 'Community entry deleted successfully'}, status=status.HTTP_200_OK)
+            
+        except CommunityEntry.DoesNotExist:
+            return Response({'error': 'Community entry not found or you do not have permission to delete it'}, 
+                           status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 class ShareJournalEntryView(APIView):
     """View to share a journal entry to the community (anonymously)"""
     permission_classes = [IsAuthenticated]

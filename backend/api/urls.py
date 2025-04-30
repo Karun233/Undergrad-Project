@@ -45,6 +45,8 @@ urlpatterns = [
     path('community-entries/', views.CommunityEntryListView.as_view(), name='community-entry-list'),
     path('community-entries/<int:entry_id>/', views.CommunityEntryDetailView.as_view(), name='community-entry-detail'),
     path('journal/<int:journal_id>/entries/<int:entry_id>/share/', views.ShareJournalEntryView.as_view(), name='share-journal-entry'),
+    path('my-community-entries/', views.UserCommunityEntriesView.as_view(), name='user-community-entries'),
+    path('community-entries/<int:entry_id>/delete/', views.DeleteCommunityEntryView.as_view(), name='delete-community-entry'),
 ]
 
 if settings.DEBUG:
