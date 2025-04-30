@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap-icons/font/bootstrap-icons.css'; // Import Bootstrap Icons
 import '../styles/CommunityPage.css';
 import Navbar from '../components/Navbar';
 
@@ -50,7 +51,30 @@ function CommentForm({ entry, onCommentAdded }) {
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(false);
   const [commentError, setCommentError] = useState(null);
-
+  const [currentUser, setCurrentUser] = useState('');
+  
+  // Get current username when component mounts
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/user/profile/`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+          }
+        });
+        
+        console.log('Comment form - User profile data:', response.data);
+        if (response.data && response.data.username) {
+          setCurrentUser(response.data.username);
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+      }
+    };
+    
+    fetchCurrentUser();
+  }, []);
+  
   const handleAddComment = async (e) => {
     e.preventDefault();
     
@@ -127,6 +151,32 @@ function CommunityEntryCard({ entry, onImageClick, isUserEntry, onDeleteClick })
   const [loading, setLoading] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [commentError, setCommentError] = useState(null);
+  const [commentToDelete, setCommentToDelete] = useState(null);
+  const [showDeleteCommentModal, setShowDeleteCommentModal] = useState(false);
+  const [currentUser, setCurrentUser] = useState('');
+  
+  // Get current username when component mounts
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/user/profile/`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+          }
+        });
+        
+        console.log('User profile data:', response.data);
+        if (response.data && response.data.username) {
+          setCurrentUser(response.data.username);
+          console.log('Set current user to:', response.data.username);
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+      }
+    };
+    
+    fetchCurrentUser();
+  }, []);
   
   // Function to format date to include day name (e.g., "Tuesday, 11th April 2025")
   const formatDate = (dateString) => {
@@ -150,6 +200,19 @@ function CommunityEntryCard({ entry, onImageClick, isUserEntry, onDeleteClick })
     }
     // Otherwise, prepend the API base URL
     return `${API_BASE_URL}${imagePath}`;
+  };
+  
+  // Function to check if the current user is the owner of a comment
+  const isCommentOwner = (comment) => {
+    // Compare the comment username with the current user's username
+    console.log('Comment username:', comment.username);
+    console.log('Current username:', currentUser);
+    
+    // Add a direct comparison for debugging
+    const isOwner = comment.username === currentUser;
+    console.log('Is owner?', isOwner);
+    
+    return isOwner;
   };
   
   // Fetch comments when the showComments state changes to true
@@ -182,37 +245,61 @@ function CommunityEntryCard({ entry, onImageClick, isUserEntry, onDeleteClick })
     setComments([newComment, ...comments]);
   };
 
+  // Function to handle comment delete button click
+  const handleDeleteCommentClick = (comment) => {
+    setCommentToDelete(comment);
+    setShowDeleteCommentModal(true);
+  };
+
   // Function to delete a comment
-  const handleDeleteComment = async (commentId) => {
-    if (!window.confirm('Are you sure you want to delete this comment?')) {
-      return;
-    }
+  const handleDeleteComment = async () => {
+    if (!commentToDelete) return;
     
     try {
-      await axios.delete(`${API_BASE_URL}/comments/${commentId}/delete/`, {
+      setLoading(true);
+      console.log('Deleting comment with ID:', commentToDelete.id);
+      
+      const response = await axios.delete(`${API_BASE_URL}/comments/${commentToDelete.id}/delete/`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`
         }
       });
       
+      console.log('Delete response:', response.data);
+      
       // Remove the deleted comment from the comments array
-      setComments(comments.filter(comment => comment.id !== commentId));
+      setComments(comments.filter(comment => comment.id !== commentToDelete.id));
+      setCommentError(null);
+      
+      // Show success message
+      alert('Comment deleted successfully!');
     } catch (error) {
       console.error('Error deleting comment:', error);
-      setCommentError('Failed to delete comment. Please try again.');
+      if (error.response) {
+        console.error('Error status:', error.response.status);
+        console.error('Error data:', error.response.data);
+        setCommentError(`Failed to delete comment: ${error.response.data.error || 'Unknown error'}`);
+      } else {
+        setCommentError('Failed to delete comment. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+      setShowDeleteCommentModal(false);
+      setCommentToDelete(null);
     }
   };
   
-  // Check if the current user is the author of a comment
-  const isCommentOwner = (comment) => {
-    // Get the current user's username from localStorage
-    const currentUser = JSON.parse(localStorage.getItem('user'));
-    return currentUser && currentUser.username === comment.username;
-  };
-
   return (
     <div className="col-lg-6 mb-4">
       <div className="card community-entry-card h-100">
+        {/* Delete Confirmation Modal for Comments */}
+        <ConfirmationModal
+          isOpen={showDeleteCommentModal}
+          onClose={() => setShowDeleteCommentModal(false)}
+          onConfirm={handleDeleteComment}
+          message="Are you sure you want to delete this comment? This action cannot be undone."
+        />
+        
         <div className="card-header d-flex justify-content-between align-items-center">
           <h5 className="mb-0">{entry.instrument}</h5>
           <div>
@@ -365,14 +452,18 @@ function CommunityEntryCard({ entry, onImageClick, isUserEntry, onDeleteClick })
                           <strong>{comment.username}</strong>
                           <div className="d-flex align-items-center">
                             <small className="text-muted me-2">{formatCommentDate(comment.created_at)}</small>
-                            {isCommentOwner(comment) && (
+                            {isCommentOwner(comment) ? (
                               <button 
-                                className="btn btn-sm btn-link text-danger p-0" 
-                                onClick={() => handleDeleteComment(comment.id)}
+                                className="btn btn-sm btn-danger ms-2" 
+                                onClick={() => handleDeleteCommentClick(comment)}
                                 title="Delete comment"
                               >
-                                <i className="bi bi-x-circle"></i>
+                                <i className="bi bi-trash"></i> Delete
                               </button>
+                            ) : (
+                              <span className="ms-2 text-muted small">
+                                {/* Empty space to maintain layout */}
+                              </span>
                             )}
                           </div>
                         </div>

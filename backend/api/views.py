@@ -1382,8 +1382,15 @@ class CommentDeleteView(APIView):
         from .models import Comment
         
         try:
-            # Get the comment and check if the user is the owner
-            comment = Comment.objects.get(id=comment_id, user=request.user)
+            # Try to get the comment
+            comment = Comment.objects.get(id=comment_id)
+            
+            # Check if the user is the owner of the comment by comparing usernames
+            if comment.user.username != request.user.username:
+                return Response(
+                    {'error': 'You can only delete your own comments'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
             
             # Delete the comment
             comment.delete()
@@ -1391,7 +1398,6 @@ class CommentDeleteView(APIView):
             return Response({'message': 'Comment deleted successfully'}, status=status.HTTP_200_OK)
             
         except Comment.DoesNotExist:
-            return Response({'error': 'Comment not found or you do not have permission to delete it'}, 
-                           status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': 'Comment not found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
