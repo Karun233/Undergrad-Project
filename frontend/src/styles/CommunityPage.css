@@ -1,0 +1,159 @@
+.community-page {
+  background-color: #f8f9fa;
+  min-height: calc(100vh - 60px);
+  padding-bottom: 40px;
+}
+
+.community-entry-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  overflow: hidden;
+  border: none;
+}
+
+.community-entry-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+}
+
+.community-entry-card .card-header {
+  background-color: #f1f5f9;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 15px 20px;
+}
+
+.trade-detail {
+  margin-bottom: 8px;
+}
+
+.detail-label {
+  font-weight: 600;
+  margin-right: 8px;
+  color: #555;
+}
+
+.detail-value {
+  font-weight: 500;
+}
+
+.confidence-badge {
+  background-color: #e9ecef;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: #495057;
+}
+
+.review-text {
+  background-color: #f8f9fa;
+  padding: 10px;
+  border-radius: 4px;
+  color: #495057;
+  font-style: italic;
+}
+
+.review-rating {
+  text-align: right;
+  font-weight: 500;
+  margin-top: 5px;
+  color: #6c757d;
+}
+
+.trade-image-wrapper {
+  width: 100px;
+  height: 100px;
+  margin: 5px;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.trade-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.trade-image:hover {
+  transform: scale(1.05);
+}
+
+/* Image Modal Styles */
+.image-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1060;
+}
+
+.image-modal-content {
+  position: relative;
+  max-width: 90%;
+  max-height: 90%;
+}
+
+.image-modal-img {
+  max-width: 100%;
+  max-height: 90vh;
+  border-radius: 4px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  background-color: white;
+}
+
+.image-modal-close {
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 28px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+/* Share Preview Modal */
+.share-preview-modal .modal-dialog {
+  max-width: 700px;
+}
+
+.share-preview-heading {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.preview-notice {
+  padding: 10px 15px;
+  background-color: #e9f7ef;
+  border-radius: 5px;
+  color: #27ae60;
+  margin-bottom: 20px;
+}
+
+.share-buttons {
+  text-align: right;
+  margin-top: 20px;
+}
+
+.share-cancel-btn {
+  margin-right: 10px;
+}
+
+.share-confirm-btn {
+  background-color: #4285F4;
+  border-color: #4285F4;
+}
+
+.share-confirm-btn:hover {
+  background-color: #2b6ed1;
+  border-color: #2b6ed1;
+}

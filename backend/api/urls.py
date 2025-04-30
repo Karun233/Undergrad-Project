@@ -40,6 +40,11 @@ urlpatterns = [
     path('journal/<int:journal_id>/milestones/<int:milestone_id>/update/', views.MilestoneUpdateView.as_view(), name='milestone-update'),
     path('journal/<int:journal_id>/milestones/<int:milestone_id>/delete/', views.MilestoneDeleteView.as_view(), name='milestone-delete'),
     path('journal/<int:journal_id>/milestones/recalculate/', views.MilestoneRecalculateView.as_view(), name='milestone-recalculate'),
+    
+    # Community endpoints
+    path('community-entries/', views.CommunityEntryListView.as_view(), name='community-entry-list'),
+    path('community-entries/<int:entry_id>/', views.CommunityEntryDetailView.as_view(), name='community-entry-detail'),
+    path('journal/<int:journal_id>/entries/<int:entry_id>/share/', views.ShareJournalEntryView.as_view(), name='share-journal-entry'),
 ]
 
 if settings.DEBUG:

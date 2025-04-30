@@ -10,6 +10,7 @@ import AddEntry from './pages/AddEntry'; // Import the AddEntry component
 import FeedbackPage from './pages/FeedbackPage';
 import ProfilePage from './pages/ProfilePage';
 import Milestones from './pages/Milestones';
+import CommunityPage from './pages/CommunityPage'; // Import CommunityPage
 
 function App() {
   return (
@@ -52,6 +53,14 @@ function App() {
           element={
             <ProtectedRoute>
               <FeedbackPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/journal/:id/community"
+          element={
+            <ProtectedRoute>
+              <CommunityPage />
             </ProtectedRoute>
           }
         />

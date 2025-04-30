@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { OverlayTrigger, Tooltip } from 'react-bootstrap';
@@ -178,6 +178,10 @@ const tableStyles = `
   
   .action-button.view {
     color: #5f3dc4;
+  }
+  
+  .action-button.share {
+    color: #28a745;
   }
   
   /* Entry detail modal */
@@ -633,6 +637,154 @@ const ImageUploader = ({ images, onImagesChange }) => {
   );
 };
 
+// Share Preview Modal Component
+function SharePreviewModal({ entry, isOpen, onClose, onConfirm }) {
+  if (!isOpen || !entry) return null;
+  
+  // Function to format date to include day name (e.g., "Tuesday, 11th April 2025")
+  const formatDate = (dateString) => {
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', options);
+  };
+
+  // Function to get full image URL
+  const getFullImageUrl = (imagePath) => {
+    // If the path already contains http:// or https://, return it as is
+    if (imagePath && (imagePath.startsWith('http://') || imagePath.startsWith('https://'))) {
+      return imagePath;
+    }
+    // Otherwise, prepend the API_BASE_URL to the image path
+    return `${API_BASE_URL}${imagePath}`;
+  };
+
+  return (
+    <div className="modal share-preview-modal" style={{ display: 'block', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+      <div className="modal-dialog modal-lg">
+        <div className="modal-content">
+          <div className="modal-header">
+            <h5 className="modal-title">Share to Community</h5>
+            <button type="button" className="btn-close" onClick={onClose}></button>
+          </div>
+          <div className="modal-body">
+            <div className="share-preview-heading">
+              <h6 className="mb-3">Preview your entry before sharing</h6>
+              <div className="preview-notice">
+                <i className="bi bi-info-circle me-2"></i>
+                This entry will be shared anonymously. Your username and personal information will not be visible to other users.
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="card-header d-flex justify-content-between align-items-center">
+                <h5 className="mb-0">{entry.instrument}</h5>
+                <span className={`badge ${entry.outcome === 'Win' ? 'bg-success' : entry.outcome === 'Loss' ? 'bg-danger' : 'bg-secondary'}`}>
+                  {entry.outcome}
+                </span>
+              </div>
+              <div className="card-body">
+                <div className="mb-3">
+                  <small className="text-muted">Traded on {formatDate(entry.date)}</small>
+                </div>
+                
+                <div className="row mb-3">
+                  <div className="col-6">
+                    <div className="trade-detail">
+                      <span className="detail-label">Direction:</span>
+                      <span className="detail-value">{entry.direction}</span>
+                    </div>
+                  </div>
+                  <div className="col-6">
+                    <div className="trade-detail">
+                      <span className="detail-label">Risk/Reward:</span>
+                      <span className="detail-value">{entry.risk_reward_ratio || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="row mb-3">
+                  <div className="col-6">
+                    <div className="trade-detail">
+                      <span className="detail-label">P/L:</span>
+                      <span className={`detail-value ${parseFloat(entry.profit_loss) > 0 ? 'text-success' : parseFloat(entry.profit_loss) < 0 ? 'text-danger' : ''}`}>
+                        {entry.profit_loss ? `${parseFloat(entry.profit_loss) > 0 ? '+' : ''}${entry.profit_loss}` : 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="col-6">
+                    <div className="trade-detail">
+                      <span className="detail-label">Risk %:</span>
+                      <span className="detail-value">{entry.risk_percent ? `${entry.risk_percent}%` : 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mb-3">
+                  <h6>Emotions Before Trade:</h6>
+                  <div className="d-flex justify-content-between align-items-center">
+                    <span>{entry.feeling_before || 'Not specified'}</span>
+                    {entry.confidence_before && (
+                      <div className="confidence-badge">
+                        Confidence: {entry.confidence_before}/10
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="mb-3">
+                  <h6>Emotions During Trade:</h6>
+                  <div className="d-flex justify-content-between align-items-center">
+                    <span>{entry.feeling_during || 'Not specified'}</span>
+                    {entry.confidence_during && (
+                      <div className="confidence-badge">
+                        Confidence: {entry.confidence_during}/10
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {entry.review && (
+                  <div className="mb-3">
+                    <h6>Trade Review:</h6>
+                    <p className="review-text">{entry.review}</p>
+                    {entry.review_rating && (
+                      <div className="review-rating">
+                        Rating: {entry.review_rating}/10
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {entry.images && entry.images.length > 0 && (
+                  <div className="mt-3">
+                    <h6>Trade Images:</h6>
+                    <div className="d-flex flex-wrap">
+                      {entry.images.map((image, idx) => (
+                        <div key={idx} className="trade-image-wrapper">
+                          <img 
+                            src={getFullImageUrl(image)}
+                            alt={`Trade image ${idx + 1}`}
+                            className="trade-image"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="share-buttons mt-4">
+              <button className="btn btn-secondary share-cancel-btn" onClick={onClose}>Cancel</button>
+              <button className="btn btn-primary share-confirm-btn" onClick={onConfirm}>Share to Community</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AddEntry() {
   const { id } = useParams(); // Get the journal ID from the URL
   console.log('Journal ID:', id);
@@ -647,6 +799,9 @@ function AddEntry() {
   const [showImageModal, setShowImageModal] = useState(false); // State for image modal visibility
   const [selectedImageUrl, setSelectedImageUrl] = useState(null); // Track the selected image URL
   const [detailEntry, setDetailEntry] = useState(null); // Track the entry being viewed in detail
+  const [selectedEntryForShare, setSelectedEntryForShare] = useState(null); // Track the entry to share
+  const [showSharedModal, setShowSharedModal] = useState(false); // State for share modal visibility
+  const [sharingStatus, setSharingStatus] = useState({ isSharing: false, message: '', error: false }); // Track sharing status
 
   const [formData, setFormData] = useState({
     date: '',
@@ -908,159 +1063,108 @@ function AddEntry() {
     e.preventDefault();
     
     try {
-      // Pre-submission validation
-      if (formData.risk_percent && isNaN(parseFloat(formData.risk_percent))) {
-        alert('Risk percentage must be a valid number');
-        return;
-      }
-
-      // Force all rating values to be proper numbers
-      const confidenceBefore = Number(formData.confidence_before || 5);
-      const confidenceDuring = Number(formData.confidence_during || 5);
-      const reviewRating = Number(formData.review_rating || 5);
+      console.log("Form submission started with form data:", formData);
       
-      // Ensure feelings are properly set as strings, not arrays
-      const feelingBefore = formData.feeling_before || 'Neutral';
-      const feelingDuring = formData.feeling_during || 'Neutral';
-      
-      console.log('Form values being submitted:', {
-        confidenceBefore,
-        confidenceDuring,
-        reviewRating,
-        feelingBefore,
-        feelingDuring
-      });
-
-      // Prepare data for API - ensure all numeric fields are sent as numbers
-      const apiData = {
-        ...formData,
-        journal: parseInt(id),
-        risk_percent: formData.risk_percent ? parseFloat(formData.risk_percent) : null,
+      // Step 1: Create the entry data object
+      const entryData = {
+        date: formData.date,
+        follow_strategy: formData.follow_strategy === 'true' || formData.follow_strategy === true,
+        instrument: formData.instrument,
+        direction: formData.direction,
+        outcome: formData.outcome,
         risk_reward_ratio: formData.risk_reward_ratio ? parseFloat(formData.risk_reward_ratio) : null,
         profit_loss: formData.profit_loss ? parseFloat(formData.profit_loss) : null,
-        follow_strategy: formData.follow_strategy === 'true' || formData.follow_strategy === true,
-        review: review,
-        feeling_before: feelingBefore,
-        feeling_during: feelingDuring,
-        feeling_before_text: feelingBefore, 
-        feeling_during_text: feelingDuring, 
-        confidence_before: confidenceBefore,
-        confidence_during: confidenceDuring,
-        review_rating: reviewRating
+        risk_percent: formData.risk_percent ? parseFloat(formData.risk_percent) : null,
+        risk_management: formData.risk_management,
+        feeling_before: formData.feeling_before || 'Neutral',
+        feeling_during: formData.feeling_during || 'Neutral',
+        confidence_before: Number(formData.confidence_before || 5),
+        confidence_during: Number(formData.confidence_during || 5),
+        review_rating: Number(formData.review_rating || 5),
+        review: review
       };
-
-      // Log the data we're sending to API for debugging
-      console.log('Submitting data to API:', apiData);
-
-      let response;
-      // If in edit mode, update the existing entry
+      
+      console.log("Entry data prepared:", entryData);
+      
+      // Step 2: Create or update the entry
+      let entryId;
+      
       if (editMode) {
-        // For PUT requests, include explicit numeric values in the URL format
-        console.log(`Updating entry with ID: ${currentEntryId}, sending values:`, {
-          confidence_before: confidenceBefore,
-          confidence_during: confidenceDuring,
-          review_rating: reviewRating
+        console.log(`Updating entry with ID: ${currentEntryId}`);
+        await axios.put(
+          `${API_BASE_URL}/journal/${id}/entries/${currentEntryId}/update/`,
+          entryData,
+          { headers: { 'Content-Type': 'application/json' } }
+        );
+        entryId = currentEntryId;
+      } else {
+        console.log("Creating new entry");
+        const response = await axios.post(
+          `${API_BASE_URL}/journal/${id}/entries/create/`,
+          entryData,
+          { headers: { 'Content-Type': 'application/json' } }
+        );
+        entryId = response.data.id;
+        console.log("New entry created with ID:", entryId);
+      }
+      
+      // Step 3: Handle image uploads if there are any
+      if (selectedImages && selectedImages.length > 0) {
+        console.log("Processing images:", selectedImages.length);
+        
+        // Create a new FormData instance just for images
+        const imageFormData = new FormData();
+        
+        // Add new image files (File objects)
+        const newImages = selectedImages.filter(img => typeof img !== 'string');
+        console.log("New images to upload:", newImages.length);
+        
+        newImages.forEach((image, index) => {
+          imageFormData.append(`image${index}`, image);
         });
         
-        // Make sure to stringify the numbers for debugging
-        const endpoint = `${API_BASE_URL}/journal/${id}/entries/${currentEntryId}/update/`;
-        console.log(`Sending PUT request to: ${endpoint}`);
+        // Add existing image URLs (strings)
+        const existingImages = selectedImages.filter(img => typeof img === 'string');
+        console.log("Existing images to preserve:", existingImages.length);
         
-        response = await axios.put(
-          endpoint, 
-          {
-            ...apiData,
-            confidence_before: confidenceBefore,
-            confidence_during: confidenceDuring,
-            review_rating: reviewRating
-          },
-          {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-      } else {
-        // Otherwise, create a new entry
-        response = await axios.post(
-          `${API_BASE_URL}/journal/${id}/entries/create/`, 
-          apiData,
-          {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-      }
-
-      // Handle image uploads if any
-      if (selectedImages.length > 0) {
-        // Only process non-string images (new file uploads)
-        const newImages = selectedImages.filter(img => typeof img !== 'string');
-        if (newImages.length > 0) {
-          const formData = new FormData();
-          newImages.forEach((image, index) => {
-            formData.append(`image${index}`, image);
-          });
-          
-          // Append existing images that are strings (URLs)
-          const existingImages = selectedImages
-            .filter(img => typeof img === 'string')
-            .map(url => url);
-          
-          if (existingImages.length > 0) {
-            formData.append('existing_images', JSON.stringify(existingImages));
-          }
-
-          const entryId = editMode ? currentEntryId : response.data.id;
+        if (existingImages.length > 0) {
+          imageFormData.append('existing_images', JSON.stringify(existingImages));
+        }
+        
+        // Only upload if there's something to upload
+        if (newImages.length > 0 || (editMode && existingImages.length > 0)) {
+          console.log("Uploading images for entry ID:", entryId);
           await axios.post(
-            `${API_BASE_URL}/journal/${id}/entries/${entryId}/images/upload/`, 
-            formData, 
-            {
-              headers: {
-                'Content-Type': 'multipart/form-data',
-              },
-            }
+            `${API_BASE_URL}/journal/${id}/entries/${entryId}/images/upload/`,
+            imageFormData,
+            { headers: { 'Content-Type': 'multipart/form-data' } }
           );
+          console.log("Image upload complete");
         }
       }
-
-      // Refresh entries after form submission
-      const updatedEntries = await axios.get(`${API_BASE_URL}/journal/${id}/entries/`);
-      console.log('Updated entries response:', updatedEntries.data);
       
-      // Sort the updated entries before setting state
+      // Step 4: Refresh entries after submission
+      console.log("Refreshing entries list");
+      const updatedEntries = await axios.get(`${API_BASE_URL}/journal/${id}/entries/`);
       const sortedEntries = [...updatedEntries.data].sort(
         (a, b) => new Date(a.date) - new Date(b.date)
       );
       
-      // Debug log entries data after update
-      sortedEntries.forEach(entry => {
-        console.log(`Updated Entry ${entry.id} data:`, {
-          feeling_before: entry.feeling_before,
-          confidence_before: entry.confidence_before,
-          feeling_during: entry.feeling_during,
-          confidence_during: entry.confidence_during,
-          review_rating: entry.review_rating
-        });
-      });
-      
       setEntries(sortedEntries);
       
-      // Close the modal and reset form
+      // Step 5: Reset form and show success message
+      console.log("Form submission complete, resetting form");
       setShowModal(false);
       resetForm();
       
-      // Show success message
       alert(editMode ? 'Entry updated successfully!' : 'Entry added successfully!');
     } catch (error) {
       console.error('Error submitting form:', error);
       
-      // Show detailed error message
       if (error.response) {
         console.error('Error status:', error.response.status);
         console.error('Error data:', error.response.data);
-        // More detailed error information
+        
         if (error.response.data) {
           const errorDetails = Object.entries(error.response.data)
             .map(([key, value]) => `${key}: ${value}`)
@@ -1153,6 +1257,59 @@ function AddEntry() {
     setDetailEntry(null);
   };
 
+  // Function to handle share click
+  const handleShareClick = (entry) => {
+    setSelectedEntryForShare(entry);
+    setShowSharedModal(true);
+  };
+
+  // Function to handle share confirmation
+  const handleShareConfirm = async () => {
+    if (!selectedEntryForShare) return;
+    
+    try {
+      setSharingStatus({ isSharing: true, message: 'Sharing entry...', error: false });
+      
+      const response = await axios.post(
+        `${API_BASE_URL}/journal/${id}/entries/${selectedEntryForShare.id}/share/`,
+        {},
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+          }
+        }
+      );
+      
+      setSharingStatus({ 
+        isSharing: false, 
+        message: 'Entry shared successfully! It is now available in the community section.', 
+        error: false 
+      });
+      
+      // Close modal after a delay to show success message
+      setTimeout(() => {
+        setShowSharedModal(false);
+        setSelectedEntryForShare(null);
+        setSharingStatus({ isSharing: false, message: '', error: false });
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Error sharing entry:', error);
+      setSharingStatus({ 
+        isSharing: false, 
+        message: error.response?.data?.error || 'Failed to share entry. Please try again.', 
+        error: true 
+      });
+    }
+  };
+
+  // Function to close share modal
+  const handleCloseShareModal = () => {
+    setShowSharedModal(false);
+    setSelectedEntryForShare(null);
+    setSharingStatus({ isSharing: false, message: '', error: false });
+  };
+
   return (
     <div className="container-fluid mt-4">
       <Navbar />
@@ -1180,7 +1337,7 @@ function AddEntry() {
                       <th>Direction</th>
                       <th>Outcome</th>
                       <th>Risk:Reward</th>
-                      <th>P&L</th>
+                      <th>P/L</th>
                       <th>Risk %</th>
                       <th>Risk Management</th>
                       <th>Feeling Before</th>
@@ -1325,6 +1482,12 @@ function AddEntry() {
                                 onClick={() => handleViewDetail(entry)}
                               >
                                 View
+                              </button>
+                              <button
+                                className="action-button share"
+                                onClick={() => handleShareClick(entry)}
+                              >
+                                Share
                               </button>
                             </div>
                           </td>
@@ -1733,6 +1896,33 @@ function AddEntry() {
         isOpen={showImageModal} 
         onClose={handleCloseImageModal} 
       />
+
+      {/* Share Preview Modal */}
+      <SharePreviewModal
+        entry={selectedEntryForShare}
+        isOpen={showSharedModal}
+        onClose={handleCloseShareModal}
+        onConfirm={handleShareConfirm}
+      />
+      
+      {/* Feedback message for sharing status */}
+      {sharingStatus.message && (
+        <div 
+          className={`position-fixed bottom-0 end-0 p-3 m-3 alert ${sharingStatus.error ? 'alert-danger' : 'alert-success'}`}
+          style={{ zIndex: 2000, maxWidth: '350px' }}
+        >
+          {sharingStatus.isSharing ? (
+            <>
+              <div className="spinner-border spinner-border-sm me-2" role="status">
+                <span className="visually-hidden">Loading...</span>
+              </div>
+              {sharingStatus.message}
+            </>
+          ) : (
+            sharingStatus.message
+          )}
+        </div>
+      )}
 
       {/* Entry Detail Modal */}
       {detailEntry && (

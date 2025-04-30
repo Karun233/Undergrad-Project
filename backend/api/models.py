@@ -138,3 +138,52 @@ class Milestone(models.Model):
         # Only save if there's an actual change
         if old_completed != self.completed or self._state.adding:
             self.save()
+
+class CommunityEntry(models.Model):
+    """Model for anonymously shared journal entries in the community section"""
+    # Original entry and journal for reference (but not exposed to community)
+    original_entry = models.ForeignKey(JournalEntry, on_delete=models.CASCADE, related_name='shared_copies')
+    original_journal = models.ForeignKey(Journal, on_delete=models.CASCADE, related_name='shared_entries')
+    
+    # Trade details
+    date = models.DateField()
+    instrument = models.CharField(max_length=100)
+    direction = models.CharField(max_length=50, choices=JournalEntry.DIRECTION_CHOICES)
+    outcome = models.CharField(max_length=50, choices=JournalEntry.OUTCOME_CHOICES)
+    
+    # Trading metrics
+    risk_reward_ratio = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    profit_loss = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    risk_percent = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    
+    # Emotional aspects
+    feeling_before = models.CharField(max_length=50, choices=JournalEntry.FEELING_BEFORE_CHOICES, blank=True, null=True)
+    confidence_before = models.IntegerField(null=True, blank=True)
+    feeling_during = models.CharField(max_length=50, choices=JournalEntry.FEELING_DURING_CHOICES, blank=True, null=True)
+    confidence_during = models.IntegerField(null=True, blank=True)
+    
+    # Trade analysis
+    review = models.TextField(blank=True, null=True)
+    review_rating = models.IntegerField(null=True, blank=True)
+    
+    # Images
+    images = ArrayField(
+        models.CharField(max_length=255), 
+        blank=True, 
+        null=True,
+        default=list
+    )
+    
+    # Timestamps
+    shared_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"Community Entry - {self.instrument} on {self.date}"
+    
+    def save(self, *args, **kwargs):
+        # Ensure images is a list of strings before saving
+        if self.images is None:
+            self.images = []
+        else:
+            self.images = [str(item) for item in self.images if item]
+        super().save(*args, **kwargs)

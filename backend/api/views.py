@@ -1119,7 +1119,7 @@ def _call_openai_chat(*, messages, model="gpt-3.5-turbo", max_tokens=700, temper
                 max_tokens=max_tokens,
                 temperature=temperature,
             )
-            return response.choices[0].message.content.strip()
+            return response.choices[0].message.content
         # Fallback to legacy style
         openai.api_key = settings.OPENAI_API_KEY  # noqa
         response = openai.ChatCompletion.create(
@@ -1128,7 +1128,124 @@ def _call_openai_chat(*, messages, model="gpt-3.5-turbo", max_tokens=700, temper
             max_tokens=max_tokens,
             temperature=temperature,
         )
-        return response.choices[0].message.content.strip()
-    except Exception as exc:
+        return response.choices[0].message.content
+    except Exception as e:
         # Reraise so calling code can catch and handle/log gracefully
-        raise exc
+        raise e
+
+# Community Views
+class CommunityEntryListView(generics.ListAPIView):
+    """View to list all community entries"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        from .models import CommunityEntry
+        community_entries = CommunityEntry.objects.all().order_by('-shared_at')
+        
+        # Serialize data manually for customization
+        entries_data = []
+        for entry in community_entries:
+            entry_data = {
+                'id': entry.id,
+                'date': entry.date,
+                'instrument': entry.instrument,
+                'direction': entry.direction,
+                'outcome': entry.outcome,
+                'risk_reward_ratio': entry.risk_reward_ratio,
+                'profit_loss': entry.profit_loss,
+                'risk_percent': entry.risk_percent,
+                'feeling_before': entry.feeling_before,
+                'confidence_before': entry.confidence_before,
+                'feeling_during': entry.feeling_during,
+                'confidence_during': entry.confidence_during,
+                'review': entry.review,
+                'review_rating': entry.review_rating,
+                'images': entry.images,
+                'shared_at': entry.shared_at
+            }
+            entries_data.append(entry_data)
+            
+        return Response(entries_data)
+
+class ShareJournalEntryView(APIView):
+    """View to share a journal entry to the community (anonymously)"""
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, journal_id, entry_id):
+        from .models import CommunityEntry
+        
+        try:
+            # Check if the journal belongs to the user
+            journal = Journal.objects.get(id=journal_id, owner=request.user)
+            
+            # Check if the entry belongs to the journal
+            entry = JournalEntry.objects.get(id=entry_id, journal=journal)
+            
+            # Create a community entry from the journal entry
+            community_entry = CommunityEntry(
+                original_entry=entry,
+                original_journal=journal,
+                date=entry.date,
+                instrument=entry.instrument,
+                direction=entry.direction,
+                outcome=entry.outcome,
+                risk_reward_ratio=entry.risk_reward_ratio,
+                profit_loss=entry.profit_loss,
+                risk_percent=entry.risk_percent,
+                feeling_before=entry.feeling_before,
+                confidence_before=entry.confidence_before,
+                feeling_during=entry.feeling_during,
+                confidence_during=entry.confidence_during,
+                review=entry.review,
+                review_rating=entry.review_rating,
+                images=entry.images
+            )
+            community_entry.save()
+            
+            return Response({
+                'message': 'Entry shared successfully',
+                'id': community_entry.id
+            }, status=status.HTTP_201_CREATED)
+            
+        except Journal.DoesNotExist:
+            return Response({'error': 'Journal not found'}, status=status.HTTP_404_NOT_FOUND)
+        except JournalEntry.DoesNotExist:
+            return Response({'error': 'Entry not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class CommunityEntryDetailView(APIView):
+    """View to get a specific community entry"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, entry_id):
+        from .models import CommunityEntry
+        
+        try:
+            entry = CommunityEntry.objects.get(id=entry_id)
+            
+            entry_data = {
+                'id': entry.id,
+                'date': entry.date,
+                'instrument': entry.instrument,
+                'direction': entry.direction,
+                'outcome': entry.outcome,
+                'risk_reward_ratio': entry.risk_reward_ratio,
+                'profit_loss': entry.profit_loss,
+                'risk_percent': entry.risk_percent,
+                'feeling_before': entry.feeling_before,
+                'confidence_before': entry.confidence_before,
+                'feeling_during': entry.feeling_during,
+                'confidence_during': entry.confidence_during,
+                'review': entry.review,
+                'review_rating': entry.review_rating,
+                'images': entry.images,
+                'shared_at': entry.shared_at
+            }
+            
+            return Response(entry_data)
+            
+        except CommunityEntry.DoesNotExist:
+            return Response({'error': 'Community entry not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
