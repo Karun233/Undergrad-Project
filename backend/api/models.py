@@ -141,11 +141,10 @@ class Milestone(models.Model):
 
 class CommunityEntry(models.Model):
     """Model for anonymously shared journal entries in the community section"""
-    # Original entry and journal for reference (but not exposed to community)
     original_entry = models.ForeignKey(JournalEntry, on_delete=models.CASCADE, related_name='shared_copies')
     original_journal = models.ForeignKey(Journal, on_delete=models.CASCADE, related_name='shared_entries')
     
-    # Trade details
+    # Basic trade information
     date = models.DateField()
     instrument = models.CharField(max_length=100)
     direction = models.CharField(max_length=50, choices=JournalEntry.DIRECTION_CHOICES)
@@ -187,3 +186,17 @@ class CommunityEntry(models.Model):
         else:
             self.images = [str(item) for item in self.images if item]
         super().save(*args, **kwargs)
+
+class Comment(models.Model):
+    """Model for comments on community entries"""
+    community_entry = models.ForeignKey(CommunityEntry, on_delete=models.CASCADE, related_name='comments')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comments')
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Comment by {self.user.username} on {self.community_entry}"

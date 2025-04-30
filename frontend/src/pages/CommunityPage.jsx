@@ -45,11 +45,99 @@ function ConfirmationModal({ isOpen, onClose, onConfirm, message }) {
   );
 }
 
+// Comment form component
+function CommentForm({ entry, onCommentAdded }) {
+  const [newComment, setNewComment] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [commentError, setCommentError] = useState(null);
+
+  const handleAddComment = async (e) => {
+    e.preventDefault();
+    
+    if (!newComment.trim()) {
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      console.log('Sending comment:', newComment);
+      
+      // Simple approach with direct data object
+      const response = await axios.post(
+        `${API_BASE_URL}/community-entries/${entry.id}/comments/create/`,
+        { content: newComment },
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+          }
+        }
+      );
+      
+      console.log('Comment response:', response.data);
+      
+      // Call the callback to update parent component
+      if (onCommentAdded) {
+        onCommentAdded(response.data);
+      }
+      
+      // Clear the comment input
+      setNewComment('');
+      setCommentError(null);
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      if (error.response) {
+        console.error('Error status:', error.response.status);
+        console.error('Error data:', error.response.data);
+        setCommentError(`Failed to add comment: ${error.response.data.error || 'Unknown error'}`);
+      } else {
+        setCommentError('Failed to add comment. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleAddComment} className="comment-form">
+      <div className="input-group">
+        <input
+          type="text"
+          className="form-control"
+          placeholder="Add a comment..."
+          value={newComment}
+          onChange={(e) => setNewComment(e.target.value)}
+          disabled={loading}
+        />
+        <button 
+          type="submit" 
+          className="btn btn-primary"
+          disabled={loading || !newComment.trim()}
+        >
+          {loading ? 'Posting...' : 'Post'}
+        </button>
+      </div>
+      {commentError && <div className="text-danger mt-2">{commentError}</div>}
+    </form>
+  );
+}
+
 // Community Entry Card Component
 function CommunityEntryCard({ entry, onImageClick, isUserEntry, onDeleteClick }) {
+  const [comments, setComments] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [commentError, setCommentError] = useState(null);
+  
   // Function to format date to include day name (e.g., "Tuesday, 11th April 2025")
   const formatDate = (dateString) => {
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', options);
+  };
+  
+  // Format comment date (e.g., "April 30, 2025 at 5:30 PM")
+  const formatCommentDate = (dateString) => {
+    const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', options);
   };
@@ -62,6 +150,64 @@ function CommunityEntryCard({ entry, onImageClick, isUserEntry, onDeleteClick })
     }
     // Otherwise, prepend the API base URL
     return `${API_BASE_URL}${imagePath}`;
+  };
+  
+  // Fetch comments when the showComments state changes to true
+  useEffect(() => {
+    if (showComments) {
+      fetchComments();
+    }
+  }, [showComments]);
+  
+  // Function to fetch comments for this entry
+  const fetchComments = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${API_BASE_URL}/community-entries/${entry.id}/comments/`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        }
+      });
+      setComments(response.data);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+      setCommentError('Failed to load comments. Please try again.');
+      setLoading(false);
+    }
+  };
+  
+  // Function to handle when a new comment is added
+  const handleCommentAdded = (newComment) => {
+    setComments([newComment, ...comments]);
+  };
+
+  // Function to delete a comment
+  const handleDeleteComment = async (commentId) => {
+    if (!window.confirm('Are you sure you want to delete this comment?')) {
+      return;
+    }
+    
+    try {
+      await axios.delete(`${API_BASE_URL}/comments/${commentId}/delete/`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        }
+      });
+      
+      // Remove the deleted comment from the comments array
+      setComments(comments.filter(comment => comment.id !== commentId));
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      setCommentError('Failed to delete comment. Please try again.');
+    }
+  };
+  
+  // Check if the current user is the author of a comment
+  const isCommentOwner = (comment) => {
+    // Get the current user's username from localStorage
+    const currentUser = JSON.parse(localStorage.getItem('user'));
+    return currentUser && currentUser.username === comment.username;
   };
 
   return (
@@ -174,6 +320,70 @@ function CommunityEntryCard({ entry, onImageClick, isUserEntry, onDeleteClick })
               </div>
             </div>
           )}
+          
+          {/* Comments Section */}
+          <div className="mt-4">
+            <button 
+              className="btn btn-outline-primary btn-sm" 
+              onClick={() => setShowComments(!showComments)}
+            >
+              {showComments ? 'Hide Comments' : 'Show Comments'}
+            </button>
+            
+            {showComments && (
+              <div className="comments-section mt-3">
+                <h6>Comments</h6>
+                
+                {/* Comment Form */}
+                <CommentForm 
+                  entry={entry}
+                  onCommentAdded={handleCommentAdded}
+                />
+                
+                {/* Error Message */}
+                {commentError && (
+                  <div className="alert alert-danger" role="alert">
+                    {commentError}
+                  </div>
+                )}
+                
+                {/* Comments List */}
+                {loading && comments.length === 0 ? (
+                  <div className="text-center py-3">
+                    <div className="spinner-border spinner-border-sm" role="status">
+                      <span className="visually-hidden">Loading...</span>
+                    </div>
+                    <p className="mt-2">Loading comments...</p>
+                  </div>
+                ) : comments.length === 0 ? (
+                  <p className="text-muted">No comments yet. Be the first to comment!</p>
+                ) : (
+                  <div className="comments-list">
+                    {comments.map(comment => (
+                      <div key={comment.id} className="comment-item">
+                        <div className="comment-header">
+                          <strong>{comment.username}</strong>
+                          <div className="d-flex align-items-center">
+                            <small className="text-muted me-2">{formatCommentDate(comment.created_at)}</small>
+                            {isCommentOwner(comment) && (
+                              <button 
+                                className="btn btn-sm btn-link text-danger p-0" 
+                                onClick={() => handleDeleteComment(comment.id)}
+                                title="Delete comment"
+                              >
+                                <i className="bi bi-x-circle"></i>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <p className="comment-content mb-0">{comment.content}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

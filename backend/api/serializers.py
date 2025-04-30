@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
-from .models import Journal, JournalEntry, EntryImage, Milestone
+from .models import Journal, JournalEntry, EntryImage, Milestone, Comment
 import json
 from .models import UserProfile
 
@@ -132,3 +132,15 @@ class MilestoneSerializer(serializers.ModelSerializer):
         if obj.target == 0:
             return 0
         return min(100, int((obj.current_progress / obj.target) * 100))
+
+class CommentSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    
+    class Meta:
+        model = Comment
+        fields = ['id', 'community_entry', 'user', 'username', 'content', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'user', 'username', 'created_at', 'updated_at']
+        extra_kwargs = {
+            'user': {'required': False},
+            'community_entry': {'required': False},
+        }

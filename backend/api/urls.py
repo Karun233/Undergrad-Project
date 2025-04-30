@@ -47,6 +47,11 @@ urlpatterns = [
     path('journal/<int:journal_id>/entries/<int:entry_id>/share/', views.ShareJournalEntryView.as_view(), name='share-journal-entry'),
     path('my-community-entries/', views.UserCommunityEntriesView.as_view(), name='user-community-entries'),
     path('community-entries/<int:entry_id>/delete/', views.DeleteCommunityEntryView.as_view(), name='delete-community-entry'),
+    
+    # Comment endpoints
+    path('community-entries/<int:entry_id>/comments/', views.CommentListView.as_view(), name='comment-list'),
+    path('community-entries/<int:entry_id>/comments/create/', views.CommentCreateView.as_view(), name='comment-create'),
+    path('comments/<int:comment_id>/delete/', views.CommentDeleteView.as_view(), name='comment-delete'),
 ]
 
 if settings.DEBUG:
