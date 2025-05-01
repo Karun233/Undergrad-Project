@@ -1,6 +1,7 @@
 import React from "react";
-import { Link, useParams, useLocation } from "react-router-dom";
+import { Link, useParams, useLocation, useNavigate } from "react-router-dom";
 import "../styles/Navbar.css";
+import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
 
 function Navbar() {
   // Get the journal ID from URL parameters
@@ -11,6 +12,18 @@ function Navbar() {
   // Get current location to highlight active link
   const location = useLocation();
   const path = location.pathname;
+  
+  // Add navigation for redirect after logout
+  const navigate = useNavigate();
+  
+  // Logout function to clear tokens and redirect to login
+  const handleLogout = () => {
+    // Remove tokens from localStorage
+    localStorage.removeItem(ACCESS_TOKEN);
+    localStorage.removeItem(REFRESH_TOKEN);
+    // Redirect to login page
+    navigate('/login');
+  };
   
   return (
     <nav className="navbar">
@@ -69,6 +82,12 @@ function Navbar() {
               </li>
             </>
           )}
+          {/* Add logout button */}
+          <li className="navbar-item logout-item">
+            <button onClick={handleLogout} className="navbar-link logout-button">
+              Logout
+            </button>
+          </li>
         </ul>
       </div>
     </nav>
