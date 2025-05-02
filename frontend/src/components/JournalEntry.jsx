@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import Select from 'react-select';
 import { getFullImageUrl } from '../utils/imageUtils';
+import api from '../api';
 
 // Helper to format date as 'Tuesday, 11th April 2025'
 function formatDate(dateString) {
@@ -49,9 +49,7 @@ function JournalEntries({ journalId }) {
   useEffect(() => {
     const fetchEntries = async () => {
       try {
-        const response = await axios.get(`/api/journals/${journalId}/entries/`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-        });
+        const response = await api.get(`/api/journals/${journalId}/entries/`);
         setEntries(response.data);
       } catch (error) {
         console.error('Error fetching journal entries:', error);
@@ -70,9 +68,7 @@ function JournalEntries({ journalId }) {
         ...formData,
         feeling_during: formData.feeling_during.map((feeling) => feeling.value),
       };
-      await axios.post(`/api/journals/${journalId}/entries/create/`, entryData, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
+      await api.post(`/api/journals/${journalId}/entries/create/`, entryData);
       alert('Entry added successfully!');
       setFormData({
         date: '',
@@ -90,9 +86,7 @@ function JournalEntries({ journalId }) {
       modalInstance.hide();
 
       // Refresh entries after adding
-      const response = await axios.get(`/api/journals/${journalId}/entries/`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
+      const response = await api.get(`/api/journals/${journalId}/entries/`);
       setEntries(response.data);
     } catch (error) {
       console.error('Error adding entry:', error);

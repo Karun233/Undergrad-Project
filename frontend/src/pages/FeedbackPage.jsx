@@ -796,6 +796,7 @@ function Dashboard() {
           <h2>Dashboard for Journal {id}</h2>
           <button
             className="btn btn-outline-secondary"
+            style={{backgroundColor: "#1a1f2b", color: "white", border: "none"}}
             onClick={fetchWeeklyReport}
             disabled={reportLoading}
           >
@@ -890,6 +891,7 @@ function Dashboard() {
             {!showAIFeedback && (
               <button 
                 className="btn btn-primary" 
+                style={{backgroundColor: "#1a1f2b", color: "white", border: "none"}}
                 onClick={generateAIFeedback}
                 disabled={feedbackLoading || entries.length < 5}
               >

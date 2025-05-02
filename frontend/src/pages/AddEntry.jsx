@@ -1321,6 +1321,7 @@ function AddEntry() {
               <button
                 type="button"
                 className="btn btn-primary"
+                style={{backgroundColor: "#1a1f2b", color: "white", border: "none"}}
                 onClick={handleAddNew}
               >
                 Add New Entry

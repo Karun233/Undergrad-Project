@@ -175,37 +175,16 @@ function Home() {
         <div 
           className="modal-overlay" 
           onClick={closeModal}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000
-          }}
         >
           <div 
             className="modal-content"
             onClick={handleModalContentClick}
-            style={{
-              backgroundColor: 'white',
-              padding: '20px',
-              borderRadius: '5px',
-              width: '80%',
-              maxWidth: '500px',
-              maxHeight: '80vh',
-              overflow: 'auto'
-            }}
           >
             <h2>{isEditing ? 'Edit Journal' : 'Create New Journal'}</h2>
             
             <form onSubmit={isEditing ? (e) => updateJournal(e, editingJournalId) : createJournal}>
-              <div className="form-group" style={{ marginBottom: '15px' }}>
-                <label htmlFor="title" style={{ display: 'block', marginBottom: '5px' }}>Title:</label>
+              <div className="form-group">
+                <label htmlFor="title">Title:</label>
                 <input
                   type="text"
                   id="title"
@@ -214,17 +193,11 @@ function Home() {
                   onChange={(e) => setTitle(e.target.value)}
                   value={title}
                   placeholder="Enter journal title"
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    borderRadius: '4px',
-                    border: '1px solid #ddd'
-                  }}
                 />
               </div>
               
-              <div className="form-group" style={{ marginBottom: '15px' }}>
-                <label htmlFor="description" style={{ display: 'block', marginBottom: '5px' }}>Description:</label>
+              <div className="form-group">
+                <label htmlFor="description">Description:</label>
                 <textarea
                   id="description"
                   name="description"
@@ -232,19 +205,11 @@ function Home() {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Enter journal description"
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    borderRadius: '4px',
-                    border: '1px solid #ddd',
-                    minHeight: '100px',
-                    resize: 'vertical'
-                  }}
                 ></textarea>
               </div>
               
-              <div className="form-group" style={{ marginBottom: '15px' }}>
-                <label htmlFor="maxRisk" style={{ display: 'block', marginBottom: '5px' }}>
+              <div className="form-group">
+                <label htmlFor="maxRisk">
                   Maximum Risk Per Trade (%):
                 </label>
                 <input
@@ -258,20 +223,14 @@ function Home() {
                   value={maxRisk}
                   onChange={(e) => setMaxRisk(e.target.value)}
                   placeholder="Enter maximum risk percentage"
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    borderRadius: '4px',
-                    border: '1px solid #ddd'
-                  }}
                 />
-                <small style={{ display: 'block', marginTop: '5px', color: '#666' }}>
+                <small>
                   This is the maximum percentage of your account you're willing to risk on a single trade.
                 </small>
               </div>
               
-              <div className="form-group" style={{ marginBottom: '15px' }}>
-                <label htmlFor="accountSize" style={{ display: 'block', marginBottom: '5px' }}>
+              <div className="form-group">
+                <label htmlFor="accountSize">
                   Account Size ($):
                 </label>
                 <input
@@ -284,44 +243,17 @@ function Home() {
                   value={accountSize}
                   onChange={(e) => setAccountSize(e.target.value)}
                   placeholder="Enter account size"
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    borderRadius: '4px',
-                    border: '1px solid #ddd'
-                  }}
                 />
-                <small style={{ display: 'block', marginTop: '5px', color: '#666' }}>
+                <small>
                   This is the initial size of your trading account.
                 </small>
               </div>
               
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <button 
-                  type="button"
-                  onClick={closeModal}
-                  style={{
-                    padding: '8px 16px',
-                    backgroundColor: '#6c757d',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                  }}
-                >
+              <div className="modal-actions">
+                <button type="button" onClick={closeModal}>
                   Cancel
                 </button>
-                <button 
-                  type="submit"
-                  style={{
-                    padding: '8px 16px',
-                    backgroundColor: '#007bff',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                  }}
-                >
+                <button type="submit">
                   {isEditing ? 'Update Journal' : 'Create Journal'}
                 </button>
               </div>

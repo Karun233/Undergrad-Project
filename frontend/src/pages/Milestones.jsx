@@ -224,6 +224,7 @@ function Milestones() {
           <button 
             className="btn btn-primary" 
             onClick={syncMilestones}
+            style={{backgroundColor: "#1a1f2b", color: "white", border: "none"}}
             disabled={syncing}
           >
             {syncing ? (
