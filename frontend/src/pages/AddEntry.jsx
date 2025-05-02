@@ -820,10 +820,9 @@ function AddEntry() {
     feeling_during: 'Neutral', // Default feeling during
     confidence_during: 5,   // Default confidence during (1-10)
     review_rating: 5,       // Default review rating (1-10)
+    review: '',             // Default review
   });
 
-  const [feelingBefore, setFeelingBefore] = useState('');
-  const [feelingDuring, setFeelingDuring] = useState('');
   const [review, setReview] = useState('');
 
   // Load saved column widths from localStorage on mount
@@ -974,6 +973,7 @@ function AddEntry() {
                         ? Number(entry.confidence_during) : 5,
       review_rating: entry.review_rating !== undefined && entry.review_rating !== null 
                     ? Number(entry.review_rating) : 5,
+      review: entry.review || '',
     });
     
     console.log("Setting form data with confidence values:", {
@@ -987,8 +987,6 @@ function AddEntry() {
     
     // Set selected images to the existing images from the entry
     setSelectedImages(entry.images || []);
-    setFeelingBefore(entry.feeling_before_text || '');
-    setFeelingDuring(entry.feeling_during_text || '');
     setReview(entry.review || '');
     setCurrentEntryId(entry.id);
     setEditMode(true);
@@ -1029,10 +1027,10 @@ function AddEntry() {
     setEntryToDelete(null);
   };
 
-  // Reset form and modal state
-  const resetForm = () => {
+  // Reset form and close modal
+  const handleCloseModal = () => {
     setFormData({
-      date: new Date().toISOString().split('T')[0],
+      date: '',
       instrument: '',
       direction: 'Buy',
       outcome: 'Win',
@@ -1050,8 +1048,6 @@ function AddEntry() {
       review_rating: 5,
     });
     setSelectedImages([]);
-    setFeelingBefore('');
-    setFeelingDuring('');
     setReview('');
     setCurrentEntryId(null);
     setEditMode(false);
@@ -1081,7 +1077,7 @@ function AddEntry() {
         confidence_before: Number(formData.confidence_before || 5),
         confidence_during: Number(formData.confidence_during || 5),
         review_rating: Number(formData.review_rating || 5),
-        review: review
+        review: review,
       };
       
       console.log("Entry data prepared:", entryData);
@@ -1154,8 +1150,7 @@ function AddEntry() {
       
       // Step 5: Reset form and show success message
       console.log("Form submission complete, resetting form");
-      setShowModal(false);
-      resetForm();
+      handleCloseModal();
       
       alert(editMode ? 'Entry updated successfully!' : 'Entry added successfully!');
     } catch (error) {
@@ -1183,14 +1178,9 @@ function AddEntry() {
     }
   };
 
-  // Close the modal and reset form
-  const handleCloseModal = () => {
-    resetForm();
-  };
-
   // Initialize new entry creation
   const handleAddNew = () => {
-    resetForm();
+    handleCloseModal();
     setShowModal(true);
   };
 
@@ -1686,14 +1676,6 @@ function AddEntry() {
                         </div>
                       </div>
                     </div>
-                    <div className="mt-2">
-                      <textarea 
-                        className="form-control" 
-                        value={feelingBefore} 
-                        onChange={e => setFeelingBefore(e.target.value)} 
-                        placeholder="Additional details about your feelings before the trade..." 
-                      />
-                    </div>
                   </div>
                   
                   {/* Feeling During Trade */}
@@ -1739,19 +1721,11 @@ function AddEntry() {
                         </div>
                       </div>
                     </div>
-                    <div className="mt-2">
-                      <textarea 
-                        className="form-control" 
-                        value={feelingDuring} 
-                        onChange={e => setFeelingDuring(e.target.value)} 
-                        placeholder="Additional details about your feelings during the trade..." 
-                      />
-                    </div>
                   </div>
                   
                   {/* Review */}
                   <div className="mb-3">
-                    <div className="d-flex justify-content-between align-items-center">
+                    <div className="d-flex align-items-center justify-content-between">
                       <label>Review (rate 1-10)</label>
                       <div className="d-flex align-items-center">
                         <label className="me-2 form-label mb-0">Rating:</label>
