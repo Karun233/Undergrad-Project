@@ -734,7 +734,25 @@ function SharePreviewModal({ entry, isOpen, onClose, onConfirm }) {
                 <div className="mb-3">
                   <h6>Emotions During Trade:</h6>
                   <div className="d-flex justify-content-between align-items-center">
-                    <span>{entry.feeling_during || 'Not specified'}</span>
+                    <span>
+                      {(() => {
+                        const feeling = entry.feeling_during;
+                        // Handle string format
+                        if (typeof feeling === 'string') {
+                          return feeling.replace(/['"[\]]/g, '');
+                        }
+                        // Handle array format
+                        else if (Array.isArray(feeling)) {
+                          if (feeling.length > 0) {
+                            const firstFeeling = feeling[0];
+                            return typeof firstFeeling === 'string' 
+                              ? firstFeeling.replace(/['"[\]]/g, '') 
+                              : String(firstFeeling);
+                          }
+                        }
+                        return 'Not specified';
+                      })()}
+                    </span>
                     {entry.confidence_during && (
                       <div className="confidence-badge">
                         Confidence: {entry.confidence_during}/10
@@ -1382,14 +1400,15 @@ function AddEntry() {
                             {(() => {
                               // Handle various formats of feeling_during
                               if (typeof entry.feeling_during === 'string') {
-                                return entry.feeling_during;
+                                // Clean up any JSON string representation
+                                return entry.feeling_during.replace(/['"[\]]/g, '');
                               } 
                               else if (Array.isArray(entry.feeling_during)) {
                                 if (entry.feeling_during.length > 0) {
                                   // Get first item if it's an array
                                   const feeling = entry.feeling_during[0];
-                                  // Remove any quotes if it's a string with quotes
-                                  return typeof feeling === 'string' ? feeling.replace(/['"[\]]/g, '') : feeling;
+                                  // Clean up any string representation
+                                  return typeof feeling === 'string' ? feeling.replace(/['"[\]]/g, '') : String(feeling);
                                 }
                               }
                               // Default fallback
