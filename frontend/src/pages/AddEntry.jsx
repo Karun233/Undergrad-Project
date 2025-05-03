@@ -3,16 +3,15 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { OverlayTrigger, Tooltip } from 'react-bootstrap';
-// Import your token constants
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
 import Navbar from '../components/Navbar';
 import { getFullImageUrl } from '../utils/imageUtils';
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
-// Add custom CSS for the table with Notion-like styling
+// custom CSS for table 
 const tableStyles = `
-  /* Overall table styling with Notion-like appearance */
+  /* table styling */
   .journal-entries-table {
     border-collapse: separate;
     border-spacing: 0;
@@ -829,16 +828,16 @@ function AddEntry() {
     risk_management: '',
     feeling_during: [],
     additional_comments: '',
-    risk_reward_ratio: '',  // New field
-    profit_loss: '',        // New field
-    risk_percent: '',       // New field
-    follow_strategy: true,  // Default to true for following strategy
-    feeling_before: 'Neutral', // Default feeling before
-    confidence_before: 5,   // Default confidence before (1-10)
-    feeling_during: 'Neutral', // Default feeling during
-    confidence_during: 5,   // Default confidence during (1-10)
-    review_rating: 5,       // Default review rating (1-10)
-    review: '',             // Default review
+    risk_reward_ratio: '',  
+    profit_loss: '',        
+    risk_percent: '',       
+    follow_strategy: true,  
+    feeling_before: 'Neutral', 
+    confidence_before: 5,   
+    feeling_during: 'Neutral', 
+    confidence_during: 5,   
+    review_rating: 5,       
+    review: '',             
   });
 
   const [review, setReview] = useState('');

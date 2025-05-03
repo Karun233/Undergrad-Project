@@ -598,7 +598,8 @@ class TradingFeedbackView(APIView):
                 })
                 
             # Extract data for analysis
-            trades_data = self._prepare_trades_data(entries, journal)
+            trading_helper = TradingFeedbackView()
+            trades_data = trading_helper._prepare_trades_data(entries, journal)
             
             # Generate AI feedback
             feedback = self._generate_ai_feedback(trades_data)
@@ -692,24 +693,24 @@ class TradingFeedbackView(APIView):
                 'risk_reward_ratio': entry.risk_reward_ratio
             })
         
-        # Calculate metrics
+        # metrics
         total_trades = len(trades)
         win_rate = (win_count / total_trades * 100) if total_trades > 0 else 0
         
-        # Calculate average risk
+        # average risk
         avg_risk = statistics.mean(risk_percentages) if risk_percentages else 0
         
-        # Calculate average risk-reward ratio
+        # average risk-reward ratio
         avg_risk_reward_ratio = statistics.mean(risk_reward_ratios) if risk_reward_ratios else 0
         
-        # Calculate profit factor
+        # profit factor
         profit_factor = total_profit / total_loss if total_loss > 0 else total_profit if total_profit > 0 else 0
         
-        # Calculate percentage return on account
+        #  percentage return on account
         account_size = journal.account_size if hasattr(journal, 'account_size') and journal.account_size else 10000.0
         account_return_percentage = ((total_profit - total_loss) / float(account_size)) * 100 if account_size else 0
         
-        # Find days with multiple trades
+        # days with multiple trades
         overtrading_days = [date for date, count in daily_trade_counts.items() if count > 2]
         
         # Most common instruments
@@ -781,8 +782,7 @@ class TradingFeedbackView(APIView):
         trades = trades_data["trades"]
         
         # Create prompt for OpenAI with enhanced analysis criteria
-        prompt = f"""
-As a professional trading coach, analyze this trading data and provide DETAILED feedback in a well-structured format. Focus on specific relationships between metrics and provide actionable advice.
+        prompt = f"""As a professional trading coach, analyze this trading data and provide DETAILED feedback in a well-structured format. Focus on specific relationships between metrics and provide actionable advice.
 
 TRADING STATISTICS:
 - Win rate: {summary['win_rate']}%
@@ -814,21 +814,35 @@ FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
 
 ## Emotional Analysis
 
-[Analyze how emotions are impacting trading performance. Identify patterns between emotions and outcomes. For example, if trader feels 'hesitant' but followed their strategy, explain what this means for their development. If trader feels 'confident' but has mixed results, explain what this suggests about their self-assessment.]
+[Analyze how emotions are impacting trading performance. Identify patterns between emotions and outcomes. You MUST specifically analyze whether hesitant emotions led to bad results and provide these specific recommendations:]
+
+1. If the trader feels "hesitant" or "slightly hesitant" AND their risk is higher on those trades compared to other entries, you MUST include this exact recommendation: "I notice when you feel hesitant, you're taking higher risk trades. You should lower your position size when experiencing hesitation, as this emotion correlates with poor trade outcomes."
+
+2. If the trader feels "hesitant" or "slightly hesitant" BUT their risk is within normal limits, you MUST include this exact recommendation: "Since your risk is within limits but you still feel hesitant, this suggests you need more practice with your strategy to build confidence in identifying proper setups. Consider paper trading similar setups more frequently or reviewing your successful trades to build conviction."
+
+3. For any emotions that are neutral,slightly confident or confident and have followed risk limit and strategy, say that losses like these are completley fine and that they are inevitiable.
 
 SPECIFIC GUIDANCE:
 - If win rate is high (>60%) but risk-reward is low (<1.5), suggest increasing risk-reward targets while maintaining strategy.
 - If win rate is low (<40%) but risk-reward is high (>2.0) and account is profitable, acknowledge this is a valid approach but suggest minor refinements.
 - Address emotional impacts directly - explain how specific emotions are affecting trading outcomes.
-- Keep the analysis focused and actionable.
-"""
+- Keep the analysis focused and actionable."""
         try:
             feedback = _call_openai_chat(
                 messages=[{"role": "user", "content": prompt}],
-                model="gpt-4o-mini" if hasattr(__import__('openai'), 'OpenAI') else "gpt-4-0125-preview",
-                max_tokens=1200,
+                model="gpt-3.5-turbo",
+                max_tokens=1500,
                 temperature=0.7,
             )
+            
+            # Ensure the feedback includes the Emotional Analysis section
+            if "## Emotional Analysis" not in feedback:
+                # Add the section if missing
+                feedback += "\n\n## Emotional Analysis\n\nThe trader's emotional patterns show significant impact on trading outcomes. "
+                if any(emotion in str(summary['most_common_emotions_before']).lower() for emotion in ['hesitant', 'slightly hesitant']):
+                    feedback += "When feeling hesitant, you should lower your risk when taking trades as this emotion correlates with poor trade outcomes. "
+                    feedback += "If your risk is already within limits but you still feel hesitant, this suggests you need more practice with your strategy to build confidence in identifying proper setups."
+            
             return feedback
         except Exception as e:
             print(f"OpenAI API error: {str(e)}")

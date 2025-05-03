@@ -69,7 +69,7 @@ const RiskRewardLineChart = ({ entries }) => {
     <div className="col-md-4">
       <div className="card shadow-sm mb-4">
         <div className="card-body">
-          <h6 className="text-muted">Profit Factor</h6>
+          <h6 className="text-muted">Risk : Reward</h6>
           <div className="d-flex align-items-center">
             <div>
               <h3 className="mb-0">{avgRiskReward.toFixed(2)}</h3>
@@ -112,13 +112,13 @@ const DailyWinRateChart = ({ entries }) => {
   // Parse dates and group entries by day of week
   // Using clearer labels to distinguish between Tuesday and Thursday
   const dayMap = {
-    0: 'Su', // Sunday
+    0: 'Su', 
     1: 'M',
     2: 'Tu',
     3: 'W',
     4: 'Th',
     5: 'F',
-    6: 'Sa' // Saturday
+    6: 'Sa'
   };
 
   // Initialize counters for each day with improved labels
@@ -482,7 +482,7 @@ const MetricCard = ({ title, value, description, color }) => {
   return (
     <div className="card shadow-sm mb-4">
       <div className="card-body">
-        <h6 className="text-muted">{title} <i className="bi bi-info-circle"></i></h6>
+        <h6 className="text-muted">{title}</h6>
         <h3 className={`fw-bold ${color}`}>{value}</h3>
         {description && <small className="text-muted">{description}</small>}
       </div>
@@ -610,7 +610,7 @@ function Dashboard() {
 
   // Calculate metrics from entries
   const calculateMetrics = (entries) => {
-    // Count wins, losses, etc.
+    // Counts wins, losses, breakevens.
     const wins = entries.filter(entry => entry.outcome === "Win").length;
     const losses = entries.filter(entry => entry.outcome === "Loss").length;
     const breakeven = entries.filter(entry => entry.outcome === "Breakeven").length;
@@ -645,7 +645,6 @@ function Dashboard() {
     );
     
     // Calculate the total risk-to-reward as the sum of all individual risk-to-reward values
-    // This follows the formula: (2RR + 15RR + 4RR) / 3 (number of executions)
     const totalRiskReward = validRiskRewardEntries.reduce((sum, entry) => 
       sum + parseFloat(entry.risk_reward_ratio), 0);
     
@@ -809,7 +808,7 @@ function Dashboard() {
           <div className="col-md-4">
             <div className="card shadow-sm mb-4">
               <div className="card-body text-center">
-                <h6 className="text-muted">Win Percentage <i className="bi bi-info-circle"></i></h6>
+                <h6 className="text-muted">Win Percentage</h6>
                 <CircularProgress value={parseFloat(metrics.winRate)} />
                 <small className="text-muted d-block mt-2">
                   Based on {metrics.totalTrades} trades ({metrics.wins} wins, {metrics.losses} losses)
