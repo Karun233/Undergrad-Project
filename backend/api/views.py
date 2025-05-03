@@ -19,6 +19,7 @@ from collections import Counter
 from datetime import datetime
 from datetime import timedelta
 import json
+from django.db.models import F, Count
 
 # User creation view
 class CreateUserView(generics.CreateAPIView):
@@ -84,61 +85,56 @@ class JournalDetailView(APIView):
 class JournalEntryCreateView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = (MultiPartParser, FormParser, JSONParser)
-
+    
     def post(self, request, journal_id):
         try:
+            # Get the journal
             journal = Journal.objects.get(id=journal_id, owner=request.user)
+            
+            # Create a dictionary with the request data
+            data = request.data.copy()
+            
+            # Ensure we have a proper date format
+            if 'date' in data and not isinstance(data['date'], str):
+                data['date'] = data['date'][0]
+                
+            # Extract image files and other data
+            images = request.FILES.getlist('images[]') if 'images[]' in request.FILES else []
+            
+            # Create serializer for journal entry
+            serializer = JournalEntrySerializer(data=data)
+            
+            if serializer.is_valid():
+                # Save the journal entry
+                entry = serializer.save(journal=journal)
+                
+                # Handle image uploads
+                for image in images:
+                    EntryImage.objects.create(entry=entry, image=image)
+                
+                # Update any milestones that this entry might affect
+                self.update_milestones(journal, entry)
+                
+                # Increment user's score
+                profile = UserProfile.objects.get(user=request.user)
+                profile.score += 1
+                profile.save()
+                
+                # Get the saved entry with all data
+                saved_entry = JournalEntry.objects.get(id=entry.id)
+                response_serializer = JournalEntrySerializer(saved_entry)
+                
+                return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+            else:
+                print(serializer.errors)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                
         except Journal.DoesNotExist:
             return Response({"error": "Journal not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        # Debug logging
-        print("Request data:", request.data)
-        print("Request FILES:", request.FILES)
-        
-        # We'll let the serializer handle feeling_during conversion now
-        # Create a mutable copy of request.data
-        data = request.data.copy()
-        
-        # Remove the images field from data since we'll handle it separately
-        if 'images' in data:
-            del data['images']
-        
-        # Handle JSON data
-        serializer = JournalEntrySerializer(data=data)
-        if serializer.is_valid():
-            entry = serializer.save(journal=journal)
+        except Exception as e:
+            print(str(e))
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
-            # Initialize empty images list for this entry
-            entry.images = []
-            
-            # Handle image files if present
-            images = request.FILES.getlist('images')
-            print(f"Processing {len(images)} uploaded images")
-            
-            for image in images:
-                try:
-                    image_instance = EntryImage.objects.create(entry=entry, image=image)
-                    # Make sure we're getting the correct URL with domain
-                    image_url = request.build_absolute_uri(image_instance.image.url)
-                    # Add valid image URL to the entry's images list
-                    entry.images.append(image_url)
-                    print(f"Added image URL: {image_url}")
-                except Exception as e:
-                    print(f"Error saving image: {str(e)}")
-            
-            # Save the updated entry with image URLs
-            entry.save()
-            
-            # Update milestones
-            self.update_milestones(journal, entry)
-            
-            # Return updated entry
-            updated_serializer = JournalEntrySerializer(entry)
-            return Response(updated_serializer.data, status=status.HTTP_201_CREATED)
-        
-        print("Serializer errors:", serializer.errors)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
     def update_milestones(self, journal, entry):
         try:
             # Update "Journal Trade" milestone
@@ -1146,6 +1142,47 @@ def _call_openai_chat(*, messages, model="gpt-3.5-turbo", max_tokens=700, temper
     except Exception as e:
         # Reraise so calling code can catch and handle/log gracefully
         raise e
+
+# Leaderboard View
+class LeaderboardView(APIView):
+    """View to get the top 10 users by score and the current user's rank"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        try:
+            # Get top 10 users by score
+            top_users = UserProfile.objects.select_related('user').order_by('-score')[:10]
+            
+            # Get or create current user's profile
+            current_user_profile, created = UserProfile.objects.get_or_create(
+                user=request.user,
+                defaults={'score': 0}
+            )
+            
+            # Get current user's rank
+            user_rank = UserProfile.objects.filter(score__gt=current_user_profile.score).count() + 1
+            
+            # Prepare response data
+            leaderboard_data = []
+            for profile in top_users:
+                leaderboard_data.append({
+                    'username': profile.user.username,
+                    'score': profile.score,
+                })
+            
+            response_data = {
+                'leaderboard': leaderboard_data,
+                'user_rank': user_rank,
+                'user_score': current_user_profile.score
+            }
+            
+            return Response(response_data)
+        except Exception as e:
+            print(f"Error in leaderboard view: {str(e)}")
+            return Response(
+                {"error": "Failed to retrieve leaderboard data"}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 # Community Views
 class CommunityEntryListView(generics.ListAPIView):

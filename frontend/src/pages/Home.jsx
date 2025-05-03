@@ -133,7 +133,12 @@ function Home() {
                   </div>
                   <div className="journal-actions">
                     <Link to={`/journal/${journal.id}/add-entry`}>
-                      <button className="open-journal-btn">Open Journal</button>
+                      <button 
+                        className="open-journal-btn"
+                        onClick={() => localStorage.setItem('currentJournalId', journal.id.toString())}
+                      >
+                        Open Journal
+                      </button>
                     </Link>
                     <div className="journal-management-buttons">
                       <button 

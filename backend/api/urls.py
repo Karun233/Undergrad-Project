@@ -34,6 +34,9 @@ urlpatterns = [
     # Weekly report
     path('journal/<int:journal_id>/weekly-report/', views.WeeklyReportView.as_view(), name='weekly-report'),
     
+    # Leaderboard endpoint
+    path('leaderboard/', views.LeaderboardView.as_view(), name='leaderboard'),
+    
     # Milestone endpoints
     path('journal/<int:journal_id>/milestones/', views.MilestoneListView.as_view(), name='milestone-list'),
     path('journal/<int:journal_id>/milestones/create/', views.MilestoneCreateView.as_view(), name='milestone-create'),

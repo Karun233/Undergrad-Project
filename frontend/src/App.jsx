@@ -9,7 +9,7 @@ import JournalPage from './pages/JournalPage';
 import AddEntry from './pages/AddEntry'; // Import the AddEntry component
 import FeedbackPage from './pages/FeedbackPage';
 import ProfilePage from './pages/ProfilePage';
-import Milestones from './pages/Milestones';
+import Leaderboard from './pages/Leaderboard';
 import CommunityPage from './pages/CommunityPage'; // Import CommunityPage
 
 function App() {
@@ -41,10 +41,10 @@ function App() {
           }
         />
         <Route
-          path="/journal/:id/milestones"
+          path="/leaderboard"
           element={
             <ProtectedRoute>
-              <Milestones />
+              <Leaderboard />
             </ProtectedRoute>
           }
         />

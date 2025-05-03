@@ -3,11 +3,13 @@ import { Link, useParams, useLocation, useNavigate } from "react-router-dom";
 import "../styles/Navbar.css";
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
 
-function Navbar() {
+function Navbar({ journalIdProp }) {
   // Get the journal ID from URL parameters
   const params = useParams();
   // Extract the id from params, which might be called "id" or "journalId" depending on your route setup
-  const journalId = params.id || params.journalId;
+  const journalIdFromParams = params.id || params.journalId;
+  // Use prop if provided, otherwise use from params
+  const journalId = journalIdProp || journalIdFromParams;
   
   // Get current location to highlight active link
   const location = useLocation();
@@ -58,10 +60,10 @@ function Navbar() {
               </li>
               <li className="navbar-item">
                 <Link 
-                  to={`/journal/${journalId}/milestones`} 
-                  className={`navbar-link ${path.includes('/milestones') ? 'active' : ''}`}
+                  to="/leaderboard" 
+                  className={`navbar-link ${path.includes('/leaderboard') ? 'active' : ''}`}
                 >
-                  Milestones
+                  Leaderboard
                 </Link>
               </li>
               <li className="navbar-item">

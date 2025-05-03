@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import api from "../api";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 function Leaderboard() {
   const [leaderboard, setLeaderboard] = useState([]);
@@ -10,9 +10,17 @@ function Leaderboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
-
-  // Fetch leaderboard data
+  
+  // Try to get journal ID from localStorage
+  const defaultJournalId = localStorage.getItem('currentJournalId') || localStorage.getItem('lastJournalId');
+  
+  // Use effect to fetch leaderboard data and ensure the journalId is available
   useEffect(() => {
+    // Check if we need to redirect to home if no journal is selected
+    if (!defaultJournalId) {
+      console.log("No journal ID found, but continuing with leaderboard");
+    }
+    
     const fetchLeaderboard = async () => {
       try {
         setLoading(true);
@@ -30,12 +38,12 @@ function Leaderboard() {
     };
 
     fetchLeaderboard();
-  }, [navigate]);
+  }, [defaultJournalId, navigate]);
 
   if (loading) {
     return (
       <div>
-        <Navbar />
+        <Navbar journalIdProp={defaultJournalId} />
         <div className="container mt-5 text-center">
           <div className="spinner-border text-primary" role="status">
             <span className="visually-hidden">Loading...</span>
@@ -49,7 +57,7 @@ function Leaderboard() {
   if (error) {
     return (
       <div>
-        <Navbar />
+        <Navbar journalIdProp={defaultJournalId} />
         <div className="container mt-5">
           <div className="alert alert-danger" role="alert">
             {error}
@@ -61,7 +69,7 @@ function Leaderboard() {
 
   return (
     <div>
-      <Navbar />
+      <Navbar journalIdProp={defaultJournalId} />
       <div className="container mt-5">
         <h2 className="mb-4">Leaderboard</h2>
         
@@ -86,7 +94,7 @@ function Leaderboard() {
         {/* Top 10 Leaderboard */}
         <div className="card shadow-sm">
           <div className="card-header bg-light">
-            <h4 className="mb-0">Top 10 Traders</h4>
+            <h4 className="mb-0">Top 10</h4>
           </div>
           <div className="card-body p-0">
             <div className="table-responsive">
