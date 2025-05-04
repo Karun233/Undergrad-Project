@@ -17,16 +17,38 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # First, make points nullable if it exists
+        # Check if points column exists before attempting operations
         migrations.RunSQL(
-            "ALTER TABLE api_userprofile ALTER COLUMN points DROP NOT NULL;",
-            reverse_sql="ALTER TABLE api_userprofile ALTER COLUMN points SET NOT NULL;"
+            """
+            DO $$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1 
+                    FROM information_schema.columns 
+                    WHERE table_name='api_userprofile' AND column_name='points'
+                ) THEN
+                    ALTER TABLE api_userprofile ALTER COLUMN points DROP NOT NULL;
+                END IF;
+            END $$;
+            """,
+            reverse_sql=""
         ),
         # Run the data migration
-        migrations.RunPython(migrate_points_to_score),
+        migrations.RunPython(migrate_points_to_score, migrations.RunPython.noop),
         # Then remove the points column if it exists
         migrations.RunSQL(
-            "ALTER TABLE api_userprofile DROP COLUMN IF EXISTS points;",
+            """
+            DO $$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1 
+                    FROM information_schema.columns 
+                    WHERE table_name='api_userprofile' AND column_name='points'
+                ) THEN
+                    ALTER TABLE api_userprofile DROP COLUMN points;
+                END IF;
+            END $$;
+            """,
             reverse_sql=""
         ),
     ]
