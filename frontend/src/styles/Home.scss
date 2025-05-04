@@ -1,0 +1,271 @@
+// Simple SCSS styles for the Home page
+
+.journal-page {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  h2 {
+    margin-bottom: 1.5rem;
+    color: #1a1f2b;
+    font-size: 1.75rem;
+    font-weight: 600;
+  }
+}
+
+.journal-container {
+  background-color: #fff;
+  padding: 1.5rem;
+}
+
+.journals-list {
+  margin: 1.5rem 0;
+}
+
+.journal-item {
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  background-color: #fff;
+  transition: transform 0.2s, box-shadow 0.2s;
+  
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  .journal-details {
+    padding: 1.5rem;
+
+    h3 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1.2rem;
+      color: #1a1f2b;
+      font-weight: 600;
+    }
+
+    p {
+      margin: 0 0 0.75rem 0;
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .journal-meta {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      font-size: 0.8rem;
+      color: #666;
+
+      .journal-date, .journal-risk, .journal-account-size {
+        margin: 0;
+      }
+    }
+
+    .journal-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 15px;
+      
+      .journal-management-buttons {
+        display: flex;
+        gap: 10px;
+        
+        .delete-btn, .edit-btn {
+          padding: 0.6rem 1.25rem;
+          border-radius: 4px;
+          font-size: 14px;
+          border: 1px solid;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          font-weight: 500;
+        }
+        
+        .delete-btn {
+          background-color: white;
+          border-color: #dc3545;
+          color: #dc3545;
+          
+          &:hover {
+            background-color: #dc3545;
+            color: white;
+          }
+          
+          &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+          }
+        }
+        
+        .edit-btn {
+          background-color: white;
+          border-color: #1a1f2b;
+          color: #1a1f2b;
+          
+          &:hover {
+            background-color: #1a1f2b;
+            color: white;
+          }
+        }
+      }
+      
+      .open-journal-btn {
+        background-color: #1a1f2b;
+        color: white;
+        border: none;
+        padding: 0.6rem 1.25rem;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        font-weight: 500;
+        
+        &:hover {
+          background-color: #000;
+        }
+      }
+    }
+  }
+}
+
+.create-button {
+  background-color: #1a1f2b;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 1rem;
+
+  &:hover {
+    background-color: #000;
+  }
+}
+
+.no-journals {
+  text-align: center;
+  color: #666;
+  padding: 2rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px dashed #e2e2e2;
+}
+
+// Modal styles
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  
+  h2 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    color: #1a1f2b;
+  }
+  
+  .form-group {
+    margin-bottom: 1.5rem;
+    
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #333;
+    }
+    
+    input, textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border-radius: 4px;
+      border: 1px solid #e2e2e2;
+      font-size: 1rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      
+      &:focus {
+        outline: none;
+        border-color: #1a1f2b;
+        box-shadow: 0 0 0 2px rgba(26, 31, 43, 0.1);
+      }
+    }
+    
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    
+    small {
+      display: block;
+      margin-top: 0.5rem;
+      font-size: 0.8rem;
+      color: #666;
+    }
+  }
+  
+  .modal-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1.5rem;
+  }
+  
+  button {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    
+    &[type="button"] {
+      background-color: #6c757d;
+      color: white;
+      
+      &:hover {
+        background-color: #5a6268;
+      }
+    }
+    
+    &[type="submit"] {
+      background-color: #1a1f2b;
+      color: white;
+      
+      &:hover {
+        background-color: #000;
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .journal-page {
+    padding: 1rem;
+  }
+  
+  .modal-content {
+    padding: 1.5rem;
+    width: 95%;
+  }
+}

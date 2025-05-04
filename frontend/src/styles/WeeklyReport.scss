@@ -1,0 +1,275 @@
+// Weekly Report Styles
+.weekly-report-container {
+  font-family: 'Roboto', 'Segoe UI', sans-serif;
+  padding: 10px 5px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  
+  .weekly-report-section {
+    margin-bottom: 30px;
+    background-color: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+    
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #343a40;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e9ecef;
+    }
+  }
+  
+  // Statistics grid layout
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 15px;
+    
+    .stat-card {
+      background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+      border: 1px solid #e9ecef;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+      }
+      
+      .stat-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #343a40;
+        margin-bottom: 5px;
+      }
+      
+      .stat-label {
+        font-size: 0.9rem;
+        color: #6c757d;
+        font-weight: 500;
+      }
+    }
+  }
+  
+  // Assessment container styles
+  .assessment-container {
+    .assessment-item {
+      margin-bottom: 20px;
+      
+      h4 {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 12px;
+      }
+      
+      p {
+        line-height: 1.6;
+        margin-bottom: 15px;
+      }
+    }
+    
+    .emotion-card {
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      
+      h5 {
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #343a40;
+      }
+      
+      p {
+        margin-bottom: 0;
+        font-size: 0.95rem;
+      }
+      
+      &.positive {
+        background-color: rgba(40, 167, 69, 0.1);
+        border-left: 4px solid #28a745;
+        
+        h5 {
+          color: #28a745;
+        }
+      }
+      
+      &.caution {
+        background-color: rgba(255, 193, 7, 0.1);
+        border-left: 4px solid #ffc107;
+        
+        h5 {
+          color: #d39e00;
+        }
+      }
+      
+      &.neutral {
+        background-color: rgba(108, 117, 125, 0.1);
+        border-left: 4px solid #6c757d;
+        
+        h5 {
+          color: #6c757d;
+        }
+      }
+      
+      &.negative {
+        background-color: rgba(220, 53, 69, 0.1);
+        border-left: 4px solid #dc3545;
+        
+        h5 {
+          color: #dc3545;
+        }
+      }
+    }
+  }
+  
+  // Suggestions container
+  .suggestions-container {
+    .suggestions-list {
+      padding-left: 20px;
+      
+      .suggestion-item {
+        padding: 10px 5px;
+        margin-bottom: 12px;
+        line-height: 1.6;
+        position: relative;
+        
+        &::marker {
+          color: #007bff;
+          font-weight: bold;
+        }
+        
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
+  }
+  
+  // AI analysis container styles
+  .ai-feedback-container {
+    .metric-item {
+      margin-bottom: 12px;
+      
+      .metric-label {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-bottom: 4px;
+      }
+      
+      .metric-value {
+        font-size: 1.1rem;
+        font-weight: 600;
+      }
+    }
+    
+    .card {
+      border-radius: 8px;
+      border: 1px solid rgba(0, 0, 0, 0.075);
+      
+      .card-title {
+        font-weight: 600;
+        margin-bottom: 16px;
+        font-size: 1.1rem;
+      }
+    }
+    
+    .list-group-item {
+      padding: 8px 0;
+      font-size: 0.95rem;
+      
+      i {
+        margin-right: 8px;
+      }
+    }
+    
+    .emotion-cards {
+      .card {
+        transition: transform 0.15s ease;
+        
+        &:hover {
+          transform: translateY(-3px);
+        }
+        
+        &.bg-success-subtle {
+          background-color: rgba(25, 135, 84, 0.15);
+        }
+        
+        &.bg-danger-subtle {
+          background-color: rgba(220, 53, 69, 0.15);
+        }
+      }
+    }
+    
+    .alert {
+      padding: 10px 12px;
+      margin-bottom: 5px;
+      
+      i {
+        font-size: 1rem;
+      }
+    }
+    
+    /* Performance analysis section styles */
+    .performance-analysis-section,
+    .emotional-analysis-section,
+    .action-plan-section,
+    .focus-areas-section {
+      .card-body {
+        padding: 16px 20px;
+      }
+      
+      p {
+        line-height: 1.6;
+      }
+    }
+  }
+}
+
+// Modal header adjustments
+.modal-header.bg-dark {
+  border-bottom: none;
+  
+  .modal-title {
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+}
+
+// Modal footer
+.modal-footer {
+  border-top: none;
+  padding-top: 0;
+  
+  .btn-primary {
+    padding: 8px 20px;
+    font-weight: 500;
+  }
+}
+
+// Responsive design adjustments
+@media (max-width: 768px) {
+  .weekly-report-container {
+    .stats-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .weekly-report-container {
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+}
