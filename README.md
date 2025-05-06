@@ -16,7 +16,7 @@ A comprehensive trading journal and analytics platform built as an undergraduate
 ## Getting Started
 
 ### Prerequisites
-- Node.js (v16+)
+- Node.js (v16 +)
 - Python (3.8+)
 - PostgreSQL
 

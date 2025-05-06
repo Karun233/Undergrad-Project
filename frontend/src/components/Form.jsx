@@ -38,19 +38,14 @@ function Form({route, method}) {
         <div className="auth-container">
             <div className="auth-left-panel">
                 <div className="welcome-content">
-                    <h1>Welcome to Trading Journal</h1>
-                    <p>An application designed to help traders track their performance and improve their trading strategies.</p>
+                    <h1>Welcome to Em-prove Journal</h1>
+                    <p>An application designed to help traders & investors track their performance and emotions to improve their executions.</p>
                 </div>
             </div>
             <div className="auth-right-panel">
                 <div className="form-wrapper">
                     <div className="back-link">
-                        <Link to="/" className="dashboard-link">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-arrow-left" viewBox="0 0 16 16">
-                                <path fillRule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
-                            </svg>
-                            Dashboard
-                        </Link>
+                        
                     </div>
                     
                     <h2 className="form-title">{title}</h2>
