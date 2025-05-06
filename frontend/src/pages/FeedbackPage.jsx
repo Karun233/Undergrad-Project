@@ -10,14 +10,37 @@ import '../styles/WeeklyReport.scss';
 const API_BASE_URL = 'http://localhost:8000/api';
 
 // RisktoReward Line Chart Component 
-const RiskRewardLineChart = ({ entries }) => {
-  // Filter entries that have risk_reward_ratio
-  const validEntries = entries.filter(entry => entry.risk_reward_ratio !== undefined && entry.risk_reward_ratio !== null);
+const RiskRewardLineChart = ({ entries, aiFeedback }) => {
+  // Filter entries that have risk_reward_ratio (including 0 values)
+  const validEntries = entries.filter(entry => 
+    entry.risk_reward_ratio !== null && 
+    entry.risk_reward_ratio !== undefined && 
+    entry.risk_reward_ratio !== ''
+  );
   
-  // Calculate average risk:reward ratio
-  const avgRiskReward = validEntries.length > 0
-    ? validEntries.reduce((sum, entry) => sum + parseFloat(entry.risk_reward_ratio), 0) / validEntries.length
+  // Update the frontend calculations to match the backend calculation format
+  // Get valid entries for risk-reward ratio (including any entry with a value, even 0)
+  const validRiskRewardEntries = entries.filter(entry => 
+    entry.risk_reward_ratio !== null && 
+    entry.risk_reward_ratio !== undefined && 
+    entry.risk_reward_ratio !== ''
+  );
+  
+  // Calculate total risk-reward 
+  const totalRiskReward = validRiskRewardEntries.reduce((sum, entry) => 
+    sum + parseFloat(entry.risk_reward_ratio), 0);
+    
+  // Calculate local avgRiskReward using the same formula as backend
+  // but only use it if we don't have an API value
+  const localAvgRiskReward = validRiskRewardEntries.length > 0 
+    ? totalRiskReward / validRiskRewardEntries.length
     : 0;
+    
+  // Use API value if available, otherwise use local calculation
+  const avgRiskReward = (aiFeedback && aiFeedback.summary && 
+    typeof aiFeedback.summary.avg_risk_reward_ratio !== 'undefined') 
+    ? aiFeedback.summary.avg_risk_reward_ratio 
+    : localAvgRiskReward;
   
   // Extract dates and risk:reward values
   const recentEntries = validEntries.slice(Math.max(0, validEntries.length - 15));
@@ -639,30 +662,26 @@ function Dashboard() {
     // Calculate average Risk to Reward ratio - ensure we use the actual values without any manipulation
     const validRiskRewardEntries = entries.filter(entry => 
       entry.risk_reward_ratio !== null && 
-      entry.risk_reward_ratio !== undefined &&
-      !isNaN(parseFloat(entry.risk_reward_ratio))
+      entry.risk_reward_ratio !== undefined && 
+      entry.risk_reward_ratio !== ''
     );
     
     // Calculate the total risk-to-reward as the sum of all individual risk-to-reward values
-    const totalRiskReward = validRiskRewardEntries.reduce((sum, entry) => 
-      sum + parseFloat(entry.risk_reward_ratio), 0);
+    const totalRiskReward = validRiskRewardEntries.reduce((sum, entry) => sum + parseFloat(entry.risk_reward_ratio), 0);
     
     // Use the total trades count as the denominator to get the average
-    const avgRiskReward = validRiskRewardEntries.length > 0 
-      ? totalRiskReward / validRiskRewardEntries.length
-      : 0;
+    const avgRiskReward = (aiFeedback && aiFeedback.summary && 
+      typeof aiFeedback.summary.avg_risk_reward_ratio !== 'undefined') 
+      ? aiFeedback.summary.avg_risk_reward_ratio 
+      : validRiskRewardEntries.length > 0 ? totalRiskReward / validRiskRewardEntries.length : 0;
     
     // Calculate average win and loss
     const winningTrades = entries.filter(entry => parseFloat(entry.profit_loss || 0) > 0);
     const losingTrades = entries.filter(entry => parseFloat(entry.profit_loss || 0) < 0);
     
-    const averageWin = winningTrades.length > 0 
-      ? winningTrades.reduce((sum, entry) => sum + parseFloat(entry.profit_loss || 0), 0) / winningTrades.length 
-      : 0;
+    const averageWin = winningTrades.length > 0 ? winningTrades.reduce((sum, entry) => sum + parseFloat(entry.profit_loss || 0), 0) / winningTrades.length : 0;
       
-    const averageLoss = losingTrades.length > 0 
-      ? losingTrades.reduce((sum, entry) => sum + parseFloat(entry.profit_loss || 0), 0) / losingTrades.length 
-      : 0;
+    const averageLoss = losingTrades.length > 0 ? losingTrades.reduce((sum, entry) => sum + parseFloat(entry.profit_loss || 0), 0) / losingTrades.length : 0;
     
     setMetrics({
       winRate: winRate.toFixed(2),
@@ -762,6 +781,14 @@ function Dashboard() {
     }
   };
 
+  // Add console log to debug risk-reward ratio from aiFeedback
+  useEffect(() => {
+    if (aiFeedback && aiFeedback.summary) {
+      console.log("DEBUG FRONTEND: aiFeedback.summary.avg_risk_reward_ratio =", aiFeedback.summary.avg_risk_reward_ratio);
+      console.log("DEBUG FRONTEND: debug_info =", aiFeedback.debug_info);
+    }
+  }, [aiFeedback]);
+
   if (loading) {
     return (
       <div>
@@ -817,7 +844,7 @@ function Dashboard() {
           </div>
           
           {/* Risk Reward Line Chart (Compact) */}
-          <RiskRewardLineChart entries={entries} />
+          <RiskRewardLineChart entries={entries} aiFeedback={aiFeedback} />
           
           {/* Total Profit/Loss Card */}
           <div className="col-md-4">

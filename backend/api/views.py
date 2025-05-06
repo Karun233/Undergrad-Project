@@ -599,11 +599,17 @@ class TradingFeedbackView(APIView):
             # Generate AI feedback
             feedback = self._generate_ai_feedback(trades_data)
             
+            # Debug values to help troubleshoot risk-reward ratio 
+            print(f"DEBUG RESPONSE: avg_risk_reward_ratio = {trades_data['summary']['avg_risk_reward_ratio']}")
+            
             return Response({
                 "feedback": feedback,
                 "has_enough_data": True,
                 "trades_analyzed": entries.count(),
-                "summary": trades_data["summary"]
+                "summary": trades_data["summary"],
+                "debug_info": {
+                    "avg_risk_reward_ratio": trades_data["summary"]["avg_risk_reward_ratio"]
+                }
             })
             
         except Journal.DoesNotExist:
@@ -627,6 +633,8 @@ class TradingFeedbackView(APIView):
         daily_trade_counts = Counter()
         risk_percentages = []
         risk_reward_ratios = []  # New list to track risk-to-reward ratios
+        total_risk = 0
+        total_reward = 0
         
         for entry in entries:
             # Count trade outcomes
@@ -634,13 +642,29 @@ class TradingFeedbackView(APIView):
                 win_count += 1
                 if entry.profit_loss:
                     total_profit += float(entry.profit_loss)
+                    # Add to total reward for risk-reward calculation
+                    if entry.risk_percent and entry.profit_loss:
+                        try:
+                            reward = float(entry.profit_loss)
+                            risk = float(entry.risk_percent) / 100 * float(journal.account_size)
+                            total_reward += reward
+                            total_risk += risk
+                        except (ValueError, TypeError):
+                            pass
             elif entry.outcome == 'Loss':
                 loss_count += 1
                 if entry.profit_loss:
                     total_loss += abs(float(entry.profit_loss))
+                    # Add to total risk for risk-reward calculation
+                    if entry.risk_percent:
+                        try:
+                            risk = float(entry.risk_percent) / 100 * float(journal.account_size)
+                            total_risk += risk
+                        except (ValueError, TypeError):
+                            pass
             else:
                 break_even_count += 1
-                
+            
             # Check risk percentage against max_risk
             if entry.risk_percent and float(entry.risk_percent) > float(journal.max_risk):
                 risk_exceeded_count += 1
@@ -690,56 +714,27 @@ class TradingFeedbackView(APIView):
         
         # metrics
         total_trades = len(trades)
-        win_rate = (win_count / total_trades * 100) if total_trades > 0 else 0
+        win_loss_total = win_count + loss_count  # Exclude breakeven trades
+        win_rate = (win_count / win_loss_total * 100) if win_loss_total > 0 else 0
         
         # average risk
         avg_risk = statistics.mean(risk_percentages) if risk_percentages else 0
         
-        # average risk-reward ratio
-        avg_risk_reward_ratio = statistics.mean(risk_reward_ratios) if risk_reward_ratios else 0
+        # Sum of all risk-reward ratios divided by total number of entries
+        sum_risk_reward = sum(risk_reward_ratios) if risk_reward_ratios else 0
+        avg_risk_reward_ratio = sum_risk_reward / len(entries) if entries else 0
         
-        # profit factor
-        profit_factor = total_profit / total_loss if total_loss > 0 else total_profit if total_profit > 0 else 0
+        # Add detailed debug print statements for the risk-reward calculation
+        print(f"DEBUG: Risk-Reward Calculation")
+        print(f"DEBUG: Number of entries with risk-reward values: {len(risk_reward_ratios)}")
+        print(f"DEBUG: Total number of entries: {len(entries)}")
+        print(f"DEBUG: Sum of risk-reward ratios: {sum_risk_reward}")
+        print(f"DEBUG: Final risk-reward ratio (sum / total entries): {avg_risk_reward_ratio}")
         
-        #  percentage return on account
-        account_size = journal.account_size if hasattr(journal, 'account_size') and journal.account_size else 10000.0
-        account_return_percentage = ((total_profit - total_loss) / float(account_size)) * 100 if account_size else 0
+        # Debug the AI feedback data flow
+        print(f"DEBUG: Summary before AI feedback: avg_risk_reward_ratio = {round(avg_risk_reward_ratio, 2)}")
         
-        # days with multiple trades
-        overtrading_days = [date for date, count in daily_trade_counts.items() if count > 2]
-        
-        # Most common instruments
-        most_common_instruments = common_instruments.most_common(3)
-        
-        # Most common emotions
-        most_common_emotions_before = emotions_before.most_common(3)
-        most_common_emotions_during = emotions_during.most_common(3)
-        
-        # Check if they're trading unusual instruments
-        unusual_instruments = []
-        if len(trades) >= 20:
-            common_instruments_set = {item[0] for item in common_instruments.most_common(5)}
-            recent_trades = trades[-5:]
-            for trade in recent_trades:
-                if trade['instrument'] and trade['instrument'] not in common_instruments_set:
-                    unusual_instruments.append(trade['instrument'])
-        
-        # Count strategy follo
-        strategy_followed_count = sum(1 for trade in trades if trade.get('follow_strategy', True))
-        strategy_followed_percentage = (strategy_followed_count / total_trades * 100) if total_trades > 0 else 0
-        
-        # Analyze emotion correlations with outcomes
-        emotion_outcomes = {}
-        for emotion in emotions_before:
-            winning_trades = sum(1 for trade in trades if trade.get('feeling_before') == emotion and trade.get('outcome') == 'Win')
-            total_with_emotion = emotions_before[emotion]
-            win_rate_with_emotion = (winning_trades / total_with_emotion * 100) if total_with_emotion > 0 else 0
-            emotion_outcomes[emotion] = {
-                'win_rate': round(win_rate_with_emotion, 2),
-                'count': total_with_emotion,
-                'difference': round(win_rate_with_emotion - win_rate, 2)
-            }
-        
+        # Make sure the summary uses the proper risk-reward ratio
         summary = {
             'total_trades': total_trades,
             'win_count': win_count,
@@ -752,19 +747,30 @@ class TradingFeedbackView(APIView):
             'risk_exceeded_count': risk_exceeded_count,
             'avg_risk': round(avg_risk, 2),
             'avg_risk_reward_ratio': round(avg_risk_reward_ratio, 2),
-            'profit_factor': round(profit_factor, 2),
-            'account_size': float(account_size),
-            'account_return_percentage': round(account_return_percentage, 2),
-            'overtrading_days': len(overtrading_days),
-            'most_common_instruments': most_common_instruments,
-            'most_common_emotions_before': [item[0] for item in most_common_emotions_before] if most_common_emotions_before else [],
-            'most_common_emotions_during': [item[0] for item in most_common_emotions_during] if most_common_emotions_during else [],
+            'profit_factor': round(total_profit / total_loss, 2) if total_loss > 0 else total_profit if total_profit > 0 else 0,
+            'account_size': journal.account_size if hasattr(journal, 'account_size') and journal.account_size else 10000.0,
+            'account_return_percentage': ((total_profit - total_loss) / float(journal.account_size)) * 100 if journal.account_size else 0,
+            'overtrading_days': len([date for date, count in daily_trade_counts.items() if count > 2]),
+            'most_common_instruments': common_instruments.most_common(3),
+            'most_common_emotions_before': emotions_before.most_common(3),
+            'most_common_emotions_during': emotions_during.most_common(3),
             'max_risk': float(journal.max_risk),
-            'unusual_instruments': unusual_instruments,
-            'strategy_followed_count': strategy_followed_count,
-            'strategy_followed_percentage': round(strategy_followed_percentage, 2),
-            'emotion_outcomes': emotion_outcomes
+            'unusual_instruments': [],
+            'strategy_followed_count': sum(1 for trade in trades if trade.get('follow_strategy', True)),
+            'strategy_followed_percentage': (sum(1 for trade in trades if trade.get('follow_strategy', True)) / total_trades * 100) if total_trades > 0 else 0,
+            'emotion_outcomes': {}
         }
+        
+        # Analyze emotion correlations with outcomes
+        for emotion in emotions_before:
+            winning_trades = sum(1 for trade in trades if trade.get('feeling_before') == emotion and trade.get('outcome') == 'Win')
+            total_with_emotion = emotions_before[emotion]
+            win_rate_with_emotion = (winning_trades / total_with_emotion * 100) if total_with_emotion > 0 else 0
+            summary["emotion_outcomes"][emotion] = {
+                'win_rate': round(win_rate_with_emotion, 2),
+                'count': total_with_emotion,
+                'difference': round(win_rate_with_emotion - win_rate, 2)
+            }
         
         return {
             'trades': trades,
@@ -776,8 +782,30 @@ class TradingFeedbackView(APIView):
         summary = trades_data["summary"]
         trades = trades_data["trades"]
         
+        # Debug the risk-reward ratio in the AI feedback function
+        print(f"DEBUG AI FEEDBACK: avg_risk_reward_ratio = {summary['avg_risk_reward_ratio']}")
         
-        prompt = f"""As a professional trading coach, analyze this trading data and provide DETAILED feedback in a well-structured format. Focus on specific relationships between metrics and provide actionable advice.
+        # Prepare emotion data properly
+        emotions_before = [emotion[0] for emotion in summary['most_common_emotions_before'][:3]] if summary['most_common_emotions_before'] else []
+        emotions_during = [emotion[0] for emotion in summary['most_common_emotions_during'][:3]] if summary['most_common_emotions_during'] else []
+        
+        # Check if there are any trades with hesitant feelings and analyze risk
+        hesitant_trades = [trade for trade in trades if trade.get('feeling_before') in ['Hesitant', 'Slightly hesitant']]
+        high_risk_hesitant = any(float(trade.get('risk_percent', 0)) > float(summary['avg_risk']) for trade in hesitant_trades)
+        
+        # Prepare trade data with more details
+        trade_details = []
+        for trade in trades[:5]:
+            trade_date = str(trade['date'])
+            instrument = trade['instrument']
+            outcome = trade['outcome']
+            feeling = trade.get('feeling_before', 'Unknown')
+            risk = trade.get('risk_percent', 'Unknown')
+            profit_loss = trade.get('profit_loss', 'Unknown')
+            
+            trade_details.append(f"Trade on {trade_date}: {instrument} {outcome} with feeling '{feeling}', risk {risk}%, P/L: {profit_loss}")
+        
+        prompt = f"""As a professional trading coach, analyze this SPECIFIC trading data and provide PERSONALIZED feedback directly addressing this trader's patterns. Focus on their actual metrics and provide actionable advice tailored to their trading style.
 
 TRADING STATISTICS:
 - Win rate: {summary['win_rate']}%
@@ -791,41 +819,53 @@ TRADING STATISTICS:
 - Strategy Adherence: {summary['strategy_followed_percentage']}%
 
 EMOTIONAL PATTERNS:
-{', '.join([f"'{emotion}'" for emotion in summary['most_common_emotions_before']])}
+Most common emotions before trading: {', '.join([f"'{emotion}'" for emotion in emotions_before]) if emotions_before else 'None recorded'}
+Most common emotions during trading: {', '.join([f"'{emotion}'" for emotion in emotions_during]) if emotions_during else 'None recorded'}
+
+RISK PATTERNS:
+Risk exceeded max setting: {summary['risk_exceeded_count']} times
+Average risk per trade: {summary['avg_risk']}%
+
+RECENT TRADES (with details):
+{'; '.join(trade_details)}
 
 FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
 
 ## Performance Analysis
 
-[Provide an overall assessment of the trading performance, with specific focus on the relationships between win rate, risk-reward ratio, and account growth. Address any imbalances in these metrics.]
+[Provide a PERSONALIZED assessment of THIS trader's performance, directly referencing their specific metrics. For example: "Your win rate of {summary['win_rate']}% combined with your average risk-reward of {summary['avg_risk_reward_ratio']} shows..." Use actual numbers from their trading data.]
+
+If win rate is high (>50%) but risk-reward is low (<1.5), you MUST include: "With your strong win rate of {summary['win_rate']}%, you should consider increasing your risk-reward ratio targets. Your current average of {summary['avg_risk_reward_ratio']} is below the recommended 1.5 minimum. This adjustment would significantly improve your overall profitability while maintaining your edge."
 
 ## Strengths
 
-- [List 2-3 specific strengths based on the metrics]
+- [List 2-3 specific strengths based on THIS trader's actual metrics and patterns]
+- [Reference specific trades or patterns from their data]
 
 ## Areas for Improvement
 
-- [List 2-3 specific areas that need improvement]
+- [List 2-3 specific areas that need improvement based on THIS trader's actual data]
+- [Reference specific trades or patterns from their data]
 
 ## Emotional Analysis
 
-[Analyze how emotions are impacting trading performance. Identify patterns between emotions and outcomes. You MUST specifically analyze whether hesitant emotions led to bad results and provide these specific recommendations:]
+[Analyze how THIS trader's specific emotions are impacting their trading performance. Reference their actual emotional patterns and specific trades. Be very specific about the emotions mentioned in the data.]
 
-1. If the trader feels "hesitant" or "slightly hesitant" AND their risk is higher on those trades compared to other entries, you MUST include this exact recommendation: "I notice when you feel hesitant, you're taking higher risk trades. You should lower your position size when experiencing hesitation, as this emotion correlates with poor trade outcomes."
-
-2. If the trader feels "hesitant" or "slightly hesitant" BUT their risk is within normal limits, you MUST include this exact recommendation: "Since your risk is within limits but you still feel hesitant, this suggests you need more practice with your strategy to build confidence in identifying proper setups. Consider paper trading similar setups more frequently or reviewing your successful trades to build conviction."
-
-3. For any emotions that are neutral,slightly confident or confident and have followed risk limit and strategy, say that losses like these are completley fine and that they are inevitiable.
+If the trader feels hesitant or slightly hesitant on any trades:
+- If their risk on those trades is higher than average: "I notice when you feel {emotions_before[0] if 'hesitant' in emotions_before[0].lower() else 'hesitant'}, you're taking higher risk trades. You should lower your position size when experiencing hesitation, as this emotion correlates with poor trade outcomes."
+- If their risk is within normal limits: "Since your risk is within limits but you still feel {emotions_before[0] if 'hesitant' in emotions_before[0].lower() else 'hesitant'}, this suggests you need more practice with your strategy to build confidence in identifying proper setups. Consider paper trading similar setups more frequently or reviewing your successful trades to build conviction."
 
 SPECIFIC GUIDANCE:
-- If win rate is high (>60%) but risk-reward is low (<1.5), suggest increasing risk-reward targets while maintaining strategy.
-- If win rate is low (<40%) but risk-reward is high (>2.0) and account is profitable, acknowledge this is a valid approach but suggest minor refinements.
-- Address emotional impacts directly - explain how specific emotions are affecting trading outcomes.
-- Keep the analysis focused and actionable."""
+- DIRECTLY reference the trader's actual metrics in your feedback
+- If you see they've exceeded their risk limit {summary['risk_exceeded_count']} times, address this specifically
+- If certain instruments show better/worse performance, mention them by name
+- If specific emotions correlate with better/worse outcomes in THEIR data, highlight this
+- Make all advice SPECIFIC to their trading style and patterns
+- Avoid generic advice that could apply to any trader"""
         try:
             feedback = _call_openai_chat(
                 messages=[{"role": "user", "content": prompt}],
-                model="gpt-3.5-turbo",
+                model="gpt-4-turbo",
                 max_tokens=1500,
                 temperature=0.7,
             )
@@ -919,7 +959,7 @@ Return the report in plain text Markdown without extra commentary."""
         try:
             report = _call_openai_chat(
                 messages=[{"role": "user", "content": prompt}],
-                model="gpt-3.5-turbo",
+                model="gpt-4-turbo",
                 max_tokens=700,
                 temperature=0.7,
             )
