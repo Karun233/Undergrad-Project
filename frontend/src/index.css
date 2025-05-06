@@ -58,8 +58,8 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background-color: var(--secondary-bg);
-  /* Add padding-top to create space for fixed navbar */
-  padding-top: 60px; /* Adjust this value based on your navbar height */
+  /* Add padding to body for fixed navbar */
+  padding-top: 4.5rem; /* Adjust this value based on your navbar height */
 }
 
 h1, h2, h3, h4, h5, h6 {

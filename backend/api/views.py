@@ -763,12 +763,20 @@ class TradingFeedbackView(APIView):
         
         # Analyze emotion correlations with outcomes
         for emotion in emotions_before:
-            winning_trades = sum(1 for trade in trades if trade.get('feeling_before') == emotion and trade.get('outcome') == 'Win')
-            total_with_emotion = emotions_before[emotion]
+            # Get trades with this emotion
+            emotion_trades = [trade for trade in trades if trade.get('feeling_before') == emotion]
+            # Count winning trades with this emotion (excluding breakeven)
+            winning_trades = sum(1 for trade in emotion_trades if trade.get('outcome') == 'Win')
+            # Count total trades with this emotion (excluding breakeven)
+            total_with_emotion = sum(1 for trade in emotion_trades if trade.get('outcome') in ['Win', 'Loss'])
+            
+            # Calculate win rate with this emotion
             win_rate_with_emotion = (winning_trades / total_with_emotion * 100) if total_with_emotion > 0 else 0
+            
+            # Store in summary
             summary["emotion_outcomes"][emotion] = {
                 'win_rate': round(win_rate_with_emotion, 2),
-                'count': total_with_emotion,
+                'count': emotions_before[emotion],
                 'difference': round(win_rate_with_emotion - win_rate, 2)
             }
         

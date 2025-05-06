@@ -1110,7 +1110,9 @@ function Dashboard() {
                                   {aiFeedback.summary.most_common_emotions_before && aiFeedback.summary.most_common_emotions_before.length > 0 && (
                                     <div className="emotion-cards mb-3">
                                       <div className="row">
-                                        {aiFeedback.summary.most_common_emotions_before.map((emotion, index) => {
+                                        {aiFeedback.summary.most_common_emotions_before.map((emotionItem, index) => {
+                                          // Handle both string format and tuple format [emotion, count]
+                                          const emotion = Array.isArray(emotionItem) ? emotionItem[0] : emotionItem;
                                           const emotionData = aiFeedback.summary.emotion_outcomes && aiFeedback.summary.emotion_outcomes[emotion];
                                           if (!emotionData) return null;
                                           

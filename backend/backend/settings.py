@@ -15,14 +15,18 @@ from datetime import timedelta
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# OpenAI API settings
-OPENAI_API_KEY = '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'
+# Load environment variables from .env file with explicit path
+dotenv_path = os.path.join(BASE_DIR, '.env')
+load_dotenv(dotenv_path)
 
+# For debugging - remove after fixing
+print(f"DEBUG: OPENAI_API_KEY from env: {os.getenv('OPENAI_API_KEY')}")
+
+# OpenAI API settings
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
