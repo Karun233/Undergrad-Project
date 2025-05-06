@@ -3,7 +3,7 @@ import Select from 'react-select';
 import { getFullImageUrl } from '../utils/imageUtils';
 import api from '../api';
 
-// Helper to format date as 'Tuesday, 11th April 2025'
+
 function formatDate(dateString) {
   if (!dateString) return '';
   const date = new Date(dateString);
@@ -11,7 +11,7 @@ function formatDate(dateString) {
   const day = date.getDate();
   const month = date.toLocaleString('default', { month: 'long' });
   const year = date.getFullYear();
-  // Get ordinal suffix
+  
   const getOrdinal = (n) => {
     if (n > 3 && n < 21) return 'th';
     switch (n % 10) {
@@ -37,7 +37,7 @@ function JournalEntries({ journalId }) {
     additional_comments: '',
   });
 
-  // Predefined feelings
+  
   const predefinedFeelings = [
     { value: 'confident', label: 'Confident' },
     { value: 'nervous', label: 'Nervous' },
@@ -80,7 +80,7 @@ function JournalEntries({ journalId }) {
         additional_comments: '',
       });
 
-      // Close the modal using Bootstrap JS
+      // Close the modal using Bootstrap 
       const modal = document.getElementById('addEntryModal');
       const modalInstance = bootstrap.Modal.getInstance(modal);
       modalInstance.hide();
@@ -296,7 +296,7 @@ function JournalEntries({ journalId }) {
                     )}
                   </td>
                   <td>
-                    {/* Placeholder for Edit/Delete actions if implemented */}
+                    
                   </td>
                 </tr>
               ))}

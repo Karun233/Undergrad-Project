@@ -6,10 +6,10 @@ import { ACCESS_TOKEN } from "../constants";
 import Plot from 'react-plotly.js';
 import '../styles/WeeklyReport.scss';
 
-// Your API base URL (should match what you use in other components)
+//  API base URL 
 const API_BASE_URL = 'http://localhost:8000/api';
 
-// Risk-to-Reward Line Chart Component (Compact Version)
+// RisktoReward Line Chart Component 
 const RiskRewardLineChart = ({ entries }) => {
   // Filter entries that have risk_reward_ratio
   const validEntries = entries.filter(entry => entry.risk_reward_ratio !== undefined && entry.risk_reward_ratio !== null);
@@ -19,7 +19,7 @@ const RiskRewardLineChart = ({ entries }) => {
     ? validEntries.reduce((sum, entry) => sum + parseFloat(entry.risk_reward_ratio), 0) / validEntries.length
     : 0;
   
-  // Extract dates and risk:reward values (last 15 trades for compact display)
+  // Extract dates and risk:reward values
   const recentEntries = validEntries.slice(Math.max(0, validEntries.length - 15));
   const dates = recentEntries.map(entry => entry.date);
   const ratios = recentEntries.map(entry => parseFloat(entry.risk_reward_ratio));
@@ -110,7 +110,6 @@ const DailyWinRateChart = ({ entries }) => {
   }
 
   // Parse dates and group entries by day of week
-  // Using clearer labels to distinguish between Tuesday and Thursday
   const dayMap = {
     0: 'Su', 
     1: 'M',
@@ -154,7 +153,7 @@ const DailyWinRateChart = ({ entries }) => {
 
   // Generate a sleek gradient for the bars
   const generateGradient = (value) => {
-    // Base gradient colors
+    
     const topColor = value >= 70 ? 'rgba(76, 175, 80, 1)' : 
                    value >= 50 ? 'rgba(139, 195, 74, 1)' : 
                    value >= 30 ? 'rgba(205, 220, 57, 1)' : 'rgba(255, 193, 7, 1)';
@@ -183,8 +182,8 @@ const DailyWinRateChart = ({ entries }) => {
       }
     },
     hovertemplate: '<b>%{y:.1f}%</b><extra></extra>',
-    width: 0.6, // Narrower bars for a sleeker look
-    // Rounded corners for the bars
+    width: 0.6, 
+    
     textfont: {
       family: 'Arial, sans-serif',
       size: 10,
@@ -192,7 +191,7 @@ const DailyWinRateChart = ({ entries }) => {
     }
   }];
 
-  // Configure the layout with enhanced styling
+  
   const layout = {
     autosize: true,
     height: 220,
@@ -228,7 +227,7 @@ const DailyWinRateChart = ({ entries }) => {
     showlegend: false,
     plot_bgcolor: 'rgba(0,0,0,0)',
     paper_bgcolor: 'rgba(0,0,0,0)',
-    bargap: 0.3, // Gap between bars
+    bargap: 0.3, 
     shapes: [{
       type: 'line',
       x0: -0.5,
@@ -701,7 +700,7 @@ function Dashboard() {
         ? `Risk breaches (${weeklyReport.summary.risk_exceeded_count} times).` 
         : `No risk breaches (0 times).`}\n\n`;
       
-      // Get emotion analysis (using the same logic as in the display)
+      // Get emotion analysis 
       let emotionalAnalysis = "Emotional Analysis:\n";
       
       // Include emotional insights

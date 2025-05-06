@@ -29,7 +29,7 @@ class EntryImageSerializer(serializers.ModelSerializer):
 class StringListField(serializers.Field):
     """
     Custom field for handling ArrayField of strings specifically designed 
-    to work with feeling_during and similar array fields.
+    to work with feeling_during and  otherr array fields.
     """
     def to_representation(self, obj):
         return obj  # Simply return the list as is for serialization
@@ -38,20 +38,20 @@ class StringListField(serializers.Field):
         # Convert input to a list of strings no matter what format it comes in
         if isinstance(data, str):
             try:
-                # Try to parse as JSON
+                
                 parsed_data = json.loads(data)
                 if isinstance(parsed_data, list):
                     return [str(item) for item in parsed_data if item]
                 else:
                     return [str(parsed_data)] if parsed_data else []
             except json.JSONDecodeError:
-                # If not JSON, treat as a single string item
+                
                 return [data] if data.strip() else []
         elif isinstance(data, list):
-            # If already a list, ensure all items are strings
+            
             return [str(item) for item in data if item]
         else:
-            # If some other type, convert to string and put in a list
+            
             return [str(data)] if data else []
 
 class JournalEntrySerializer(serializers.ModelSerializer):

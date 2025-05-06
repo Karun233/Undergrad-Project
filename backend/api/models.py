@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-from django.contrib.postgres.fields import ArrayField  # Import ArrayField
+from django.contrib.postgres.fields import ArrayField  
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -60,9 +60,9 @@ class JournalEntry(models.Model):
     direction = models.CharField(max_length=50, choices=DIRECTION_CHOICES)
     outcome = models.CharField(max_length=50, choices=OUTCOME_CHOICES)
     risk_management = models.TextField()
-    # Whether trader followed their strategy
+   
     follow_strategy = models.BooleanField(default=True, help_text="Did you follow your trading strategy for this trade?")
-    # Updated fields for emotion tracking with structured options
+    
     feeling_before = models.CharField(max_length=50, choices=FEELING_BEFORE_CHOICES, blank=True, null=True)
     confidence_before = models.IntegerField(null=True, blank=True, help_text="Confidence level before trade (1-10)")
     feeling_during = models.CharField(max_length=50, choices=FEELING_DURING_CHOICES, blank=True, null=True)
@@ -70,7 +70,7 @@ class JournalEntry(models.Model):
     feeling_during_text = models.TextField(blank=True, null=True)
     review = models.TextField(blank=True, null=True)
     review_rating = models.IntegerField(null=True, blank=True, help_text="Rating for this trade (1-10)")
-    # Amount risked as a percentage
+   
     risk_percent = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, help_text="Percentage of account risked on this trade")
     additional_comments = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -158,7 +158,7 @@ class CommunityEntry(models.Model):
     original_entry = models.ForeignKey(JournalEntry, on_delete=models.CASCADE, related_name='shared_copies')
     original_journal = models.ForeignKey(Journal, on_delete=models.CASCADE, related_name='shared_entries')
     
-    # Basic trade information
+    # trade info
     date = models.DateField()
     instrument = models.CharField(max_length=100)
     direction = models.CharField(max_length=50, choices=JournalEntry.DIRECTION_CHOICES)

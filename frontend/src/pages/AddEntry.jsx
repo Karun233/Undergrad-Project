@@ -9,7 +9,7 @@ import { getFullImageUrl } from '../utils/imageUtils';
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
-// custom CSS for table 
+// CSS for table 
 const tableStyles = `
   /* table styling */
   .journal-entries-table {
@@ -640,7 +640,7 @@ const ImageUploader = ({ images, onImagesChange }) => {
 function SharePreviewModal({ entry, isOpen, onClose, onConfirm }) {
   if (!isOpen || !entry) return null;
   
-  // Function to format date to include day name (e.g., "Tuesday, 11th April 2025")
+  // Function to format date to include day name 
   const formatDate = (dateString) => {
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     const date = new Date(dateString);
@@ -649,11 +649,9 @@ function SharePreviewModal({ entry, isOpen, onClose, onConfirm }) {
 
   // Function to get full image URL
   const getFullImageUrl = (imagePath) => {
-    // If the path already contains http:// or https://, return it as is
     if (imagePath && (imagePath.startsWith('http://') || imagePath.startsWith('https://'))) {
       return imagePath;
     }
-    // Otherwise, prepend the API_BASE_URL to the image path
     return `${API_BASE_URL}${imagePath}`;
   };
 
@@ -670,7 +668,7 @@ function SharePreviewModal({ entry, isOpen, onClose, onConfirm }) {
               <h6 className="mb-3">Preview your entry before sharing</h6>
               <div className="preview-notice">
                 <i className="bi bi-info-circle me-2"></i>
-                This entry will be shared anonymously. Your username and personal information will not be visible to other users.
+                This entry will be shared anonymously.
               </div>
             </div>
 
@@ -970,7 +968,7 @@ function AddEntry() {
       processed: feelingDuringValue
     });
     
-    // Ensure all numeric values have proper defaults if they're missing
+    
     setFormData({
       date: entry.date,
       instrument: entry.instrument,
@@ -1030,7 +1028,7 @@ function AddEntry() {
       setShowDeleteConfirmation(false);
       setEntryToDelete(null);
       
-      // Show success message
+      
       alert('Entry deleted successfully!');
     } catch (error) {
       console.error('Error deleting entry:', error);

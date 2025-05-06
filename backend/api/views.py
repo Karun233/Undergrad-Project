@@ -21,7 +21,7 @@ from datetime import timedelta
 import json
 from django.db.models import F, Count
 
-# User creation view
+# create user view
 class CreateUserView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -101,21 +101,21 @@ class JournalEntryCreateView(APIView):
             # Extract image files and other data
             images = request.FILES.getlist('images[]') if 'images[]' in request.FILES else []
             
-            # Create serializer for journal entry
+            
             serializer = JournalEntrySerializer(data=data)
             
             if serializer.is_valid():
-                # Save the journal entry
+                
                 entry = serializer.save(journal=journal)
                 
-                # Handle image uploads
+                
                 for image in images:
                     EntryImage.objects.create(entry=entry, image=image)
                 
-                # Update any milestones that this entry might affect
+                
                 self.update_milestones(journal, entry)
                 
-                # Increment user's score
+                
                 profile = UserProfile.objects.get(user=request.user)
                 profile.score += 1
                 profile.save()
@@ -137,27 +137,27 @@ class JournalEntryCreateView(APIView):
             
     def update_milestones(self, journal, entry):
         try:
-            # Update "Journal Trade" milestone
+            
             journal_trade_milestones = Milestone.objects.filter(journal=journal, type='journal_trade')
             for milestone in journal_trade_milestones:
                 milestone.current_progress += 1
                 milestone.update_progress()
             
-            # Update "Followed Plan" milestone if the trade followed the plan
+            # Updates "Followed Plan" milestone if the trade followed the plan
             if entry.follow_strategy:
                 followed_plan_milestones = Milestone.objects.filter(journal=journal, type='followed_plan')
                 for milestone in followed_plan_milestones:
                     milestone.current_progress += 1
                     milestone.update_progress()
             
-            # Update "High Rating" milestone if review rating is 8 or above
+            # Updates "High Rating" milestone if review rating is 8 or above
             if entry.review_rating is not None and entry.review_rating >= 8:
                 high_rating_milestones = Milestone.objects.filter(journal=journal, type='high_rating')
                 for milestone in high_rating_milestones:
                     milestone.current_progress += 1
                     milestone.update_progress()
             
-            # Update "Profitable Day" milestone if profit_loss is positive
+            # Updates "Profitable Day" milestone if profit_loss is positive
             if entry.profit_loss is not None and entry.profit_loss > 0:
                 profitable_day_milestones = Milestone.objects.filter(journal=journal, type='profitable_day')
                 for milestone in profitable_day_milestones:
@@ -165,7 +165,7 @@ class JournalEntryCreateView(APIView):
                     milestone.update_progress()
         except Exception as e:
             print(f"Error updating milestones: {str(e)}")
-            # Don't let milestone updates stop the entry creation
+            
             pass
 
 class JournalEntryListView(APIView):
@@ -211,7 +211,7 @@ class JournalEntryUpdateView(APIView):
         except JournalEntry.DoesNotExist:
             return Response({"error": "Entry not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        # Debug logging
+        
         print("Update request data:", request.data)
         print("Update request FILES:", request.FILES)
         
@@ -234,17 +234,16 @@ class JournalEntryUpdateView(APIView):
             print(f"Error processing existing_images: {str(e)}")
             existing_images = []
             
-        # Create a mutable copy of request.data
+        
         data = request.data.copy()
         
-        # Remove the images field from data since we'll handle it separately
         if 'images' in data:
             del data['images']
         
-        # Handle JSON data
+        
         serializer = JournalEntrySerializer(entry, data=data, partial=True)
         if serializer.is_valid():
-            # Save but don't override the existing images yet
+            # Save  the existing images yet
             updated_entry = serializer.save()
             
             # Reset images list with existing images that were kept
@@ -257,7 +256,7 @@ class JournalEntryUpdateView(APIView):
             for image in images:
                 try:
                     image_instance = EntryImage.objects.create(entry=updated_entry, image=image)
-                    # Make sure we're getting the correct URL with domain
+                    # Make sure the correct URL with domain
                     image_url = request.build_absolute_uri(image_instance.image.url)
                     # Add valid image URL to the entry's images list
                     updated_entry.images.append(image_url)
@@ -341,20 +340,20 @@ class JournalEntryDeleteView(APIView):
         except JournalEntry.DoesNotExist:
             return Response({"error": "Entry not found"}, status=status.HTTP_404_NOT_FOUND)
         
-        # Delete associated images from storage
+        # Delete  images from storage
         for image_path in entry.images:
             try:
-                # Convert URL to file path
+                
                 file_path = os.path.join(settings.MEDIA_ROOT, image_path.replace('/media/', ''))
                 if os.path.exists(file_path):
                     os.remove(file_path)
             except Exception as e:
                 print(f"Error deleting image {image_path}: {e}")
         
-        # Delete the entry (this will also delete related EntryImage objects due to CASCADE)
+        
         entry.delete()
         
-        # Recalculate milestone progress
+        
         self.recalculate_milestones(journal)
         
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -725,7 +724,7 @@ class TradingFeedbackView(APIView):
                 if trade['instrument'] and trade['instrument'] not in common_instruments_set:
                     unusual_instruments.append(trade['instrument'])
         
-        # Count strategy compliance
+        # Count strategy follo
         strategy_followed_count = sum(1 for trade in trades if trade.get('follow_strategy', True))
         strategy_followed_percentage = (strategy_followed_count / total_trades * 100) if total_trades > 0 else 0
         
@@ -777,7 +776,7 @@ class TradingFeedbackView(APIView):
         summary = trades_data["summary"]
         trades = trades_data["trades"]
         
-        # Create prompt for OpenAI with enhanced analysis criteria
+        
         prompt = f"""As a professional trading coach, analyze this trading data and provide DETAILED feedback in a well-structured format. Focus on specific relationships between metrics and provide actionable advice.
 
 TRADING STATISTICS:
@@ -831,9 +830,9 @@ SPECIFIC GUIDANCE:
                 temperature=0.7,
             )
             
-            # Ensure the feedback includes the Emotional Analysis section
+            #  Emotional Analysis section
             if "## Emotional Analysis" not in feedback:
-                # Add the section if missing
+                
                 feedback += "\n\n## Emotional Analysis\n\nThe trader's emotional patterns show significant impact on trading outcomes. "
                 if any(emotion in str(summary['most_common_emotions_before']).lower() for emotion in ['hesitant', 'slightly hesitant']):
                     feedback += "When feeling hesitant, you should lower your risk when taking trades as this emotion correlates with poor trade outcomes. "
@@ -884,7 +883,7 @@ class WeeklyReportView(APIView):
         if entries.count() == 0:
             return Response({"message": "No trades found for the selected week."}, status=status.HTTP_200_OK)
 
-        # Re‑use helper from TradingFeedbackView for stats
+        # Re‑used helper from TradingFeedbackView for stats
         trading_helper = TradingFeedbackView()
         trades_data = trading_helper._prepare_trades_data(entries, journal)
         feedback = self._generate_weekly_ai_feedback(trades_data)
@@ -980,7 +979,7 @@ class MilestoneCreateView(APIView):
     def initialize_milestone_progress(self, milestone, journal):
         """Initialize milestone progress based on existing entries"""
         try:
-            # Get all entries for this journal
+            
             entries = JournalEntry.objects.filter(journal=journal)
             
             # Initialize progress counter
@@ -1000,16 +999,16 @@ class MilestoneCreateView(APIView):
                 progress_count = entries.filter(review_rating__gte=8).count()
                 
             elif milestone.type == 'profitable_day':
-                # Count entries with positive profit_loss
+                
                 progress_count = entries.filter(profit_loss__gt=0).count()
             
-            # Update milestone progress
+            
             milestone.current_progress = progress_count
             milestone.update_progress()
             
         except Exception as e:
             print(f"Error initializing milestone progress: {str(e)}")
-            # Don't let this break milestone creation
+            
 
 class MilestoneUpdateView(APIView):
     permission_classes = [IsAuthenticated]
@@ -1118,9 +1117,9 @@ class MilestoneRecalculateView(APIView):
 
 def _call_openai_chat(*, messages, model="gpt-3.5-turbo", max_tokens=700, temperature=0.7):
     """Call the OpenAI chat completion endpoint supporting both old (<1.0) and new (>=1.0) SDK versions."""
-    import openai  # local import to avoid dependency issues at module load
+    import openai 
     try:
-        # If the new client style exists (openai.OpenAI), use it
+        
         if hasattr(openai, "OpenAI"):
             client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
             response = client.chat.completions.create(
@@ -1130,7 +1129,7 @@ def _call_openai_chat(*, messages, model="gpt-3.5-turbo", max_tokens=700, temper
                 temperature=temperature,
             )
             return response.choices[0].message.content
-        # Fallback to legacy style
+        
         openai.api_key = settings.OPENAI_API_KEY  # noqa
         response = openai.ChatCompletion.create(
             model=model,
@@ -1228,12 +1227,12 @@ class UserCommunityEntriesView(APIView):
         # Get all journals owned by the user
         user_journals = Journal.objects.filter(owner=request.user)
         
-        # Get all community entries that originated from the user's journals
+        # Get all community entries from the user's journals
         user_community_entries = CommunityEntry.objects.filter(
             original_journal__in=user_journals
         ).order_by('-shared_at')
         
-        # Serialize data manually for customization
+        
         entries_data = []
         for entry in user_community_entries:
             entry_data = {
@@ -1302,7 +1301,7 @@ class ShareJournalEntryView(APIView):
             # Check if the entry belongs to the journal
             entry = JournalEntry.objects.get(id=entry_id, journal=journal)
             
-            # Create a community entry from the journal entry
+            
             community_entry = CommunityEntry(
                 original_entry=entry,
                 original_journal=journal,
@@ -1381,7 +1380,7 @@ class CommentListView(APIView):
         from .serializers import CommentSerializer
         
         try:
-            # Check if the community entry exists
+            
             CommunityEntry.objects.get(id=entry_id)
             
             # Get all comments for this entry
@@ -1404,10 +1403,10 @@ class CommentCreateView(APIView):
         from .serializers import CommentSerializer
         
         try:
-            # Check if the community entry exists
+            # Check if  entry exists
             community_entry = CommunityEntry.objects.get(id=entry_id)
             
-            # Create a serializer with the request data
+            # serializer with the request data
             serializer = CommentSerializer(data=request.data)
             if serializer.is_valid():
                 # Save the comment with the community entry and user

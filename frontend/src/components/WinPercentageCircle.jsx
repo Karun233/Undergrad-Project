@@ -1,9 +1,4 @@
 import React from 'react';
-
-/**
- * Circular Progress Component for win percentage visualization
- * @param {number} value - Win percentage value (0-100)
- */
 const WinPercentageCircle = ({ value }) => {
   // Ensure value is between 0-100
   const percentage = Math.min(Math.max(0, value), 100);

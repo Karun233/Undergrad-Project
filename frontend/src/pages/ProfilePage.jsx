@@ -408,7 +408,7 @@ function Profile() {
             </div>
             
             <div className="card mb-4 border-danger">
-              <div className="card-header bg-danger text-white">Danger Zone</div>
+              <div className="card-header bg-danger text-white"></div>
               <div className="card-body">
                 <h5 className="card-title">Delete Account</h5>
                 <p className="card-text">

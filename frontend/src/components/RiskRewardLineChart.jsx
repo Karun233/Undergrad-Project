@@ -1,12 +1,9 @@
 import React from 'react';
 import Plot from 'react-plotly.js';
 
-/**
- * Line chart component to visualize risk:reward ratio for trades over time
- * @param {Array} entries - Array of journal entries containing risk:reward data
- */
+
 const RiskRewardLineChart = ({ entries }) => {
-  // Filter entries that have risk_reward_ratio
+  
   const validEntries = entries.filter(entry => entry.risk_reward_ratio !== undefined && entry.risk_reward_ratio !== null);
   
   // Extract dates and risk:reward values
