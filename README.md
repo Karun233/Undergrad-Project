@@ -24,7 +24,7 @@ A comprehensive trading journal and analytics platform built as an undergraduate
 
 1. Clone the repository
 ```
-git clone https://github.com/yourusername/Undergrad-Project.git
+git clone https://github.com/karun233/Undergrad-Project.git
 cd Undergrad-Project
 ```
 
